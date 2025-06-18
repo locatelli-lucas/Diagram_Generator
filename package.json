@@ -1,0 +1,15 @@
+{
+  "name": "diagram_generator",
+  "version": "1.0.0",
+  "description": "This JavaScript project will parse .cds (Core Data Services) files — typically used in SAP CAP and similar frameworks — to extract entity definitions and relationships, and dynamically generate corresponding Entity-Relationship Diagrams (ERDs) using Mermaid.js.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mermaid": "^11.6.0"
+  },
+  "type": "module"
+}

@@ -27,7 +27,7 @@ export const writeFile = (output, input) => {
     const data = readFile(input);
     const stream = fs.createWriteStream(output, { flags: 'a' });
     const arrayOfEntities = splitEntities(data);
-    console.log(arrayOfEntities)
+    let relationships = [];
 
     stream.write('erDiagram\n')
 
@@ -40,6 +40,14 @@ export const writeFile = (output, input) => {
             let line = lines[i];
             let type;
             let name;
+            if(line.includes('Association')  || line.includes('Composition')) {
+                relationships.push(
+                    {
+                        primary: name,
+                        line: line
+                    }
+                );
+            }
             if(line.includes(':')) {
                 line = line.split(':')
                 type = line[0].replace(/key/g, '').replace(/[^a-zA-Z]+/g, '');
@@ -49,7 +57,11 @@ export const writeFile = (output, input) => {
                 continue;
             }
             stream.write(`  ${type} ${name}\n`);
-            
+            if(relationships.length > 0) {
+                for(let j = 0; j < relationships.length; j++) {
+                    
+                }
+            }
         } 
         
     });

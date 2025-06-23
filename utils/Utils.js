@@ -38,16 +38,19 @@ export const writeFile = (output, input) => {
         
         for (let i = 1; i < lines.length; i++) {
             let line = lines[i];
-            line = line.split(':')
-            const type = line[0].replace(/[^a-zA-Z]+/g, '');
-            const name = line[1];
+            let type;
+            let name;
+            if(line.includes(':')) {
+                line = line.split(':')
+                type = line[0].replace(/key/g, '').replace(/[^a-zA-Z]+/g, '');
+                name = line[1].replace(/\(.*?\)/g, '');
+            } else {
+                stream.write(`${line}\n`);
+                continue;
+            }
             stream.write(`  ${type} ${name}\n`);
             
-        }
-
-        
+        } 
         
     });
 }
-
-writeFile("../files/test.md", "../files/test.cds");

@@ -1,13 +1,13 @@
 erDiagram
 Customer {
-  keyID  UUID;
-  name  String(111);
-  email  String(255);
+  ID  UUID;
+  name  String;
+  email  String;
   orders  Composition of many Order on orders.customer = $self;
-   undefined
+}
 Order {
-  keyID  UUID;
+  ID  UUID;
   orderDate  Date;
-  total  Decimal(9,2);
+  total  Decimal;
   customer  Association to Customer;
-   undefined
+}

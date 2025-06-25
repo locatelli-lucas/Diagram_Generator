@@ -4,7 +4,8 @@
   "description": "This JavaScript project will parse .cds (Core Data Services) files — typically used in SAP CAP and similar frameworks — to extract entity definitions and relationships, and dynamically generate corresponding Entity-Relationship Diagrams (ERDs) using Mermaid.js.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main/index.js"
   },
   "author": "",
   "license": "ISC",

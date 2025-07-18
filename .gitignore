@@ -20,3 +20,6 @@ Thumbs.db
 # Editor folders
 .vscode/
 .idea/
+
+## Markdown files
+*.md

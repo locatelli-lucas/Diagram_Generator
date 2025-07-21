@@ -17,8 +17,7 @@ export const splitEntities = (data) => {
         return [];
     }
 
-    return data
-        .split(/(?=^entity\s)/gm)
+    return data.split(/(?=^entity\s)/gm)
         .map(entity => entity.trim())
         .filter(entity => entity.length > 0 && entity.startsWith("entity"));
 }
@@ -34,7 +33,9 @@ function parseAttribute(line) {
     const projectTypes = Object.keys(categoryTaxonomyEntities);
     if (line.includes(':') && !line.includes('@')) {
         let parts = line.split(':');
-        name = parts[0].replace(/key/g, '').replace(/[^a-zA-Z]+/g, '');
+        name = parts[0].replace(/key/g, '')
+            .replace(/virtual/g, '')
+            .replace(/[^a-zA-Z]+/g, '');
         type = parts[1].replace(/\(.*?\)/g, '').trim();
 
         const matchedPrimitive = primitiveTypes.find(e => type.includes(e));
@@ -55,13 +56,13 @@ function parseAttribute(line) {
     return { name, type };
 }
 
-function handleRelationship(type, entityName, relationships) {
+function handleRelationship(line, entityName, relationships, entityNameExists) {
     const regex = /(?:Composition\s+of\s+(?:one|many)\s+|Association\s+(?:to\s+)?(?:one\s+|many\s+)?)(\w+)/;
-    const match = regex.exec(type);
+    const match = regex.exec(line);
     let relationshipType = '';
-    if (!match) return { type, relationshipType: '', match: null };
+    if (!match) return { line, relationshipType: '', match: null };
 
-    if (match[1] !== entityName && relationships.length > 0) {
+    if (entityNameExists && relationships.length > 0) {
         relationships.forEach((relationship) => {
             if (relationship.primary === match[1] && relationship.secondary === entityName) {
                 if (match[0].includes('of many')) {
@@ -101,8 +102,7 @@ function processEntity(e, stream, relationships, entitiesNames) {
     if (!entityName) return;
     stream.write(entityName + ' {\n');
 
-    if (!entitiesNames.includes(entityName))
-        entitiesNames.push(entityName);
+    entitiesNames.add(entityName);
 
     for (let i = 1; i < lines.length; i++) {
         let line = lines[i].replace(/;/g, '');
@@ -110,8 +110,8 @@ function processEntity(e, stream, relationships, entitiesNames) {
         let { name, type } = parseAttribute(line);
         if(!name || !type) continue;
 
-        if (type && (type.includes('Association') || type.includes('Composition'))) {
-            const relResult = handleRelationship(type, entityName, relationships);
+        if (line && (line.includes('Association') || line.includes('Composition'))) {
+            const relResult = handleRelationship(line, entityName, relationships, entitiesNames.has(entityName));
             type = relResult.type;
         } else if (!type) {
             stream.write(`${line}\n`);
@@ -127,8 +127,8 @@ export const writeFile = (output, input) => {
     const data = readFile(input);
     const stream = fs.createWriteStream(output, { flags: 'a' });
     const entities = splitEntities(data);
-    let relationships = [];
-    let entitiesNames = [];
+    let relationships = new Map();
+    let entitiesNames = new Set();
 
     stream.write('erDiagram\n');
 

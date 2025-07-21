@@ -14,8 +14,8 @@ Category {
   approver User
   segmentationCode Segmentation
   access Category
-  virtualrestricted Boolean
-  virtualhasChildren Boolean
+  restricted Boolean
+  hasChildren Boolean
 }
 Classification {
   category Category
@@ -63,7 +63,7 @@ UserBackup {
   scimExternalId String
   active Boolean
   email String
-  emails Email
+  emails EmailBackup
   blocked Boolean
   maxDeletionDate Date
   userUuid String
@@ -85,7 +85,7 @@ EmailBackup {
   value String
   type String
   isPrimary Boolean
-  user User
+  user UserBackup
 }
 Files {
   content Binary
@@ -148,25 +148,26 @@ JupiterUserData {
   scopes String
 }
 InitialCategoryTree {
-  categoryTree Category
-  allCategories Category
+  categoryTree CategoryCoreData
+  allCategories CategoryCoreData
 }
 ReloadCategoryTree {
-  categoryTree Category
-  allCategories Category
-  categoryReloaded Category
+  categoryTree CategoryCoreData
+  allCategories CategoryCoreData
+  categoryReloaded CategoryCoreData
 }
 CategoryCoreData {
   name String
   code String
   status Integer
-  parent Category
+  parent CategoryCoreData
   active Boolean
-  categories Category
+  categories CategoryCoreData
   responsible User
   approver User
   segmentationCode Segmentation
   access Category
-  virtualrestricted Boolean
-  virtualhasChildren Boolean
+  restricted Boolean
+  hasChildren Boolean
 }
+  Category ||--|{ Category : association

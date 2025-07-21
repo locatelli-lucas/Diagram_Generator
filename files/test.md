@@ -170,4 +170,23 @@ CategoryCoreData {
   restricted Boolean
   hasChildren Boolean
 }
-  Category ||--|{ Category : association
+  Category ||--|||{ Category : association
+  Category }o--o| Classification : composition
+  Category ||-- User : association
+  Classification o|-- Category : association
+  Classification o|--o| Classification : association
+  User }o--o| Email : composition
+  UserBackup }o--o| EmailBackup : composition
+  Email o|-- User : association
+  EmailBackup o|-- UserBackup : association
+  Files ||-- User : association
+  DefaultCategories o|-- User : association
+  DefaultCategories o|-- Category : association
+  CategoryPreview }o-- ErrorMessage : composition
+  ClassificationCodeToCategoryResponse o|-- Category : association
+  OperationHistory o|-- Category : association
+  OperationHistory ||-- User : association
+  InitialCategoryTree }|-- CategoryCoreData : association
+  ReloadCategoryTree }|-- CategoryCoreData : association
+  CategoryCoreData ||--|||{ CategoryCoreData : association
+  CategoryCoreData ||-- User : association

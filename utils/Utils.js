@@ -58,9 +58,10 @@ function parseAttribute(line) {
 
 function getRelationshipType(matchStr) {
     const associationSyntax = matchStr.includes("Association") ? "-->" : "*--";
-    if (matchStr.includes("of many")) return `"1" ${associationSyntax} "N"`;
-    if (matchStr.includes("to many")) return `"N" ${associationSyntax} "N"`;
-    return `"1" ${associationSyntax} "1"`;
+    if (matchStr.includes("of many")) return `"1" ${associationSyntax} "0..N"`;
+    if (matchStr.includes("to many")) return `"0..N" ${associationSyntax} "1"`;
+    if (matchStr.includes("of one")) return `"1" ${associationSyntax} "0..1"`;
+    return `"0..1" ${associationSyntax} "1"`;
 }
 
 
@@ -77,7 +78,7 @@ function setRelationship(relationships, key, primary, secondary, matchStr) {
 function handleRelationship(line, entityName, relationships) {
     const regex = /(?:Composition\s+of\s+(?:one|many)\s+|Association\s+(?:to\s+)?(?:one\s+|many\s+)?)(\w+)/;
     const match = regex.exec(line);
-    if (!match || match[1] === entityName) return { line, relationshipType: "", match: null };
+    if (!match || match[1] === entityName) return;
 
     const key = `${entityName}-${match[1]}`;
 
@@ -105,6 +106,9 @@ function processEntity(e, stream, relationships) {
             (line.includes("Association") || line.includes("Composition"))
         ) {
             const relResult = handleRelationship(line, entityName, relationships);
+
+            if(relResult == null) continue;
+
             type = relResult.type;
         } else if (!type) {
             stream.write(`${line}\n`);

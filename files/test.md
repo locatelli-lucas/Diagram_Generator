@@ -1,192 +1,88 @@
-erDiagram
-Category {
-  name String
-  code String
-  status Integer
-  publishStatus PublishStatus
-  parent Category
-  active Boolean
-  categories Category
-  classifications Classification
-  inactiveDate Date
-  description String
-  responsible User
-  approver User
-  segmentationCode Segmentation
-  access Category
-  restricted Boolean
-  hasChildren Boolean
+---
+config:
+  look: neo
+  layout: elk
+  theme: dark
+---
+classDiagram
+class ArtificialIntelligenceOutput {
+  model : ModelType not null
+  featureType : FeatureType not null
+  featureID : UUID
+  parentID : UUID
+  generatedAt : Date
+  promptTokens : PromptToken
 }
-Classification {
-  category Category
-  domain String
-  name String
-  code String
-  version String
-  classificationUUID String
-  logicalSystem String
-  active Boolean
-  mappedClassification Classification
-  isCustomDomain Boolean
+class GeneratedArticle {
+  categoryId : String
+  planId : String
+  title : String
+  content : String
+  generatedAt : Date
+  tags : String
+  model : ModelType not null
+  color : String
+  articleTokens : ArticleToken
+  articleId : String
+  feature : FeatureType
 }
-RuleEnforcedDomain {
-  domain String
+class PromptToken {
+  type : TokenType not null
+  value : String
+  output : ArtificialIntelligenceOutput
 }
-CategorySequences {
-  type String
-  sequenceNumber Integer
+class ArticleToken {
+  type : TokenType not null
+  value : String
+  generatedArticle : GeneratedArticle
 }
-MaterialGroup {
-  name String
-  code String
+class ArtificialIntelligenceConfiguration {
+  active : Boolean
+  model : ModelType not null
 }
-User {
-  userName String
-  lastName String
-  firstName String
-  loginName String
-  displayName String
-  scimExternalId String
-  active Boolean
-  email String
-  emails Email
-  blocked Boolean
-  maxDeletionDate Date
-  userUuid String
+class AIFeatureConfiguration {
+  active : Boolean
+  enableToolData : Boolean
+  model : ModelType not null
+  featureType : FeatureType not null
 }
-UserBackup {
-  userName String
-  lastName String
-  firstName String
-  loginName String
-  displayName String
-  scimExternalId String
-  active Boolean
-  email String
-  emails EmailBackup
-  blocked Boolean
-  maxDeletionDate Date
-  userUuid String
+class ArtificialIntelligenceTokenUsage {
+  input : Integer
+  output : Integer
+  feature : FeatureType not null
+  model : ModelType not null
+  type : ConfigurationType not null
+  generatedAt : Date
 }
-UserView {
+class ArtificialIntelligenceAcknowledgment {
+  feature : FeatureType not null
+  version : Integer
+  categoryId : String
+  value : Boolean
 }
-ActiveUserView {
+class RegenerateControl {
+  feature : FeatureType not null
+  parentId : UUID
+  changes : ContextChange
+  executed : Boolean
+  executedAt : Date
 }
-CategoryPlanUserView {
-  firstNamelastNameasfullName String
+class ContextChange {
+  element : ContextElementType not null
+  action : ChangeActionType not null
+  control : RegenerateControl
+  changedAt : Date
+  typeTokenType : String
+  typeModelType : String
+  typeFeatureType : String
+  typeArticleType : String
+  typeConfigurationType : String
+  typeContextElementType : String
+  typeChangeActionType : String
 }
-Email {
-  value String
-  type String
-  isPrimary Boolean
-  user User
-}
-EmailBackup {
-  value String
-  type String
-  isPrimary Boolean
-  user UserBackup
-}
-Files {
-  content Binary
-  mediaType String
-  type String
-  fileName String
-  user User
-  username String
-}
-DefaultCategories {
-  user User
-  category Category
-  lastVisitedTime Time
-}
-CategoryPreview {
-  code String
-  name String
-  parentCode String
-  userName String
-  firstName String
-  lastName String
-  approverName String
-  firstApproverName String
-  lastApproverName String
-  isChanged Boolean
-  isUpdated Boolean
-  validType String
-  messages ErrorMessage
-  status Integer
-  fromExcel Integer
-}
-ErrorMessage {
-  message String
-  errorCode Integer
-  errorType Integer
-}
-ClassificationCodeToCategoryResponse {
-  code String
-  category Category
-  typePublishStatus Integer
-  typeSegmentationCode String
-  typeCategoryAccess Integer
-}
-OperationHistory {
-  operationalParam String
-  operation Operation
-  category Category
-  operationalAt Time
-  operator User
-  before String
-  after String
-  typeOperation Integer
-}
-JupiterUserData {
-  displayName String
-  email String
-  firstName String
-  lastName String
-  name String
-  scopes String
-}
-InitialCategoryTree {
-  categoryTree CategoryCoreData
-  allCategories CategoryCoreData
-}
-ReloadCategoryTree {
-  categoryTree CategoryCoreData
-  allCategories CategoryCoreData
-  categoryReloaded CategoryCoreData
-}
-CategoryCoreData {
-  name String
-  code String
-  status Integer
-  parent CategoryCoreData
-  active Boolean
-  categories CategoryCoreData
-  responsible User
-  approver User
-  segmentationCode Segmentation
-  access Category
-  restricted Boolean
-  hasChildren Boolean
-}
-  Category ||--|||{ Category : association
-  Category }o--o| Classification : composition
-  Category ||-- User : association
-  Classification o|-- Category : association
-  Classification o|--o| Classification : association
-  User }o--o| Email : composition
-  UserBackup }o--o| EmailBackup : composition
-  Email o|-- User : association
-  EmailBackup o|-- UserBackup : association
-  Files ||-- User : association
-  DefaultCategories o|-- User : association
-  DefaultCategories o|-- Category : association
-  CategoryPreview }o-- ErrorMessage : composition
-  ClassificationCodeToCategoryResponse o|-- Category : association
-  OperationHistory o|-- Category : association
-  OperationHistory ||-- User : association
-  InitialCategoryTree }|-- CategoryCoreData : association
-  ReloadCategoryTree }|-- CategoryCoreData : association
-  CategoryCoreData ||--|||{ CategoryCoreData : association
-  CategoryCoreData ||-- User : association
+  ArtificialIntelligenceOutput "1" *-- "N" PromptToken : composes
+  GeneratedArticle "1" *-- "N" ArticleToken : composes
+  PromptToken "1" --> "1" ArtificialIntelligenceOutput : associates to
+  ArticleToken "1" --> "1" GeneratedArticle : associates to
+  RegenerateControl "1" *-- "N" ContextChange : composes
+  ContextChange "1" --> "1" RegenerateControl : associates to

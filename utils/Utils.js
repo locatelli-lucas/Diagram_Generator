@@ -57,48 +57,33 @@ function parseAttribute(line) {
 }
 
 function getRelationshipType(matchStr) {
-    if (matchStr.includes("of many")) return "}o--";
-    if (matchStr.includes("to many")) return "}|--";
-    if (matchStr.includes("to one")) return "||--";
-    return "o|--";
+    const associationSyntax = matchStr.includes("Association") ? "-->" : "*--";
+    if (matchStr.includes("of many")) return `"1" ${associationSyntax} "N"`;
+    if (matchStr.includes("to many")) return `"N" ${associationSyntax} "N"`;
+    return `"1" ${associationSyntax} "1"`;
 }
 
-function getReverseRelationshipType(matchStr) {
-    if (matchStr.includes("of many")) return "o{";
-    if (matchStr.includes("to many")) return "|{";
-    if (matchStr.includes("to one")) return "||";
-    return "o|";
-}
 
 function setRelationship(relationships, key, primary, secondary, matchStr) {
     relationships.set(key, {
         primary,
         secondary,
-        connectionType: matchStr.startsWith("Association") ? "association" : "composition",
+        connectionType: matchStr.startsWith("Association") ? "associates to" : "composes",
         relationshipType: getRelationshipType(matchStr),
     });
 }
 
-function updateReverseRelationship(relationships, key, matchStr, primary, secondary) {
-    const rel = relationships.get(key);
-    if (rel && rel.primary === primary && rel.secondary === secondary) {
-        rel.relationshipType += getReverseRelationshipType(matchStr);
-    }
-}
 
 function handleRelationship(line, entityName, relationships) {
     const regex = /(?:Composition\s+of\s+(?:one|many)\s+|Association\s+(?:to\s+)?(?:one\s+|many\s+)?)(\w+)/;
     const match = regex.exec(line);
-    if (!match) return { line, relationshipType: "", match: null };
+    if (!match || match[1] === entityName) return { line, relationshipType: "", match: null };
 
     const key = `${entityName}-${match[1]}`;
-    const reverseKey = `${match[1]}-${entityName}`;
 
     if (!relationships.has(key)) {
         setRelationship(relationships, key, entityName, match[1], match[0]);
     }
-
-    updateReverseRelationship(relationships, reverseKey, match[0], match[1], entityName);
 
     return { type: match[1], relationshipType: relationships.get(key)?.relationshipType || "", match };
 }
@@ -107,9 +92,7 @@ function processEntity(e, stream, relationships) {
     const lines = e.split(/\r?\n/);
     const entityName = parseEntityName(lines[0]);
     if (!entityName) return;
-    stream.write(entityName + " {\n");
-
-    // entitiesNames.add(entityName);
+    stream.write("class " + entityName + " {\n");
 
     for (let i = 1; i < lines.length; i++) {
         let line = lines[i].replace(/;/g, "");
@@ -127,7 +110,7 @@ function processEntity(e, stream, relationships) {
             stream.write(`${line}\n`);
             continue;
         }
-        stream.write(`  ${name} ${type}\n`);
+        stream.write(`  ${name} : ${type}\n`);
     }
     stream.write("}\n");
 }
@@ -138,9 +121,8 @@ export const writeFile = (output, input) => {
     const stream = fs.createWriteStream(output, { flags: "a" });
     const entities = splitEntities(data);
     let relationships = new Map();
-    let entitiesNames = new Set();
 
-    stream.write("erDiagram\n");
+    stream.write("---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
 
     entities.forEach((e) => {
         processEntity(e, stream, relationships);

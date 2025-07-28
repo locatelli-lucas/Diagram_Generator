@@ -1,288 +1,157 @@
-namespace my.bookshop;
+using {
+    cuid,
+    managed
+} from '@sap/cds/common';
 
-using {cuid, managed} from '@sap/cds/common';
+namespace com.sap.catman.category.artificialIntelligence;
 
-@assert.unique : {
-    name : [name],
-    code : [code]
-}
+entity ArtificialIntelligenceOutput : cuid, managed {
+    model        : ModelType not null;
+    featureType  : FeatureType not null;
+    featureID    : UUID not null;
+    parentID     : UUID;
+    generatedAt  : DateTime not null;
+    promptTokens : Composition of many PromptToken
+                       on promptTokens.output = $self;
+};
 
-@cds.search: {
-    ID: false,
-    name,
-    code,
-    classifications.name,
-    classifications.code,
-    responsible.userName,
-    approver.userName,
-}
+entity GeneratedArticle : cuid {
+    categoryId    : String not null;
+    planId        : String;
+    title         : String not null;
+    content       : String not null;
+    generatedAt   : DateTime not null;
+    tags          : array of String not null;
+    model         : ModelType not null;
+    color         : String;
+    articleTokens : Composition of many ArticleToken
+                        on articleTokens.generatedArticle = $self;
+    articleId     : String;
+    feature       : FeatureType;
+};
 
-entity Category : cuid {
-    name             : String(255) not null;
-    code             : String(20) not null;
-    status           : Integer not null default 0; // 0 new, 1 published, 2 changed and 3 inactive
-    publishStatus    : PublishStatus not null default 0; // 0 no status, 1 published, 2 pending publish, 3 publishing, 4 error
-    parent           : Association to one Category;
-    active           : Boolean not null default true; //identify if the category is still active
-    categories       : Association to many Category
-                           on categories.parent = $self;
-    classifications  : Composition of many Classification
-                           on classifications.category = $self;
-    inactiveDate     : Date default null;
-    description      : localized String(1000) default null;
-    responsible      : Association to one User;
-    approver         : Association to one User;
-    segmentationCode : SegmentationCode;
-    access    : CategoryAccess not null default 0; // 0 means eveny one can view, 1 means only team membeers can view, 2 means team and stakeholder members can view
-    virtual restricted : Boolean;
-    virtual hasChildren: Boolean default false;
-}
+entity PromptToken : cuid {
+    type   : TokenType not null;
+    value  : LargeString not null;
+    output : Association to ArtificialIntelligenceOutput not null;
+};
 
-@assert.unique : {code : [
-    domain,
-    version,
-    code,
-    category
-]}
+entity ArticleToken : cuid {
+    type             : TokenType not null;
+    value            : String not null;
+    generatedArticle : Association to GeneratedArticle not null;
+};
 
-entity Classification : cuid {
-    category             : Association to Category not null;
-    domain               : String(30) not null; // UNSPC, Material Group, E-Class, etc.
-    name                 : String(300) not null;
-    code                 : String(30) not null;
-    version              : String(20) not null; // UNSPSC version: 9.05, etc.
-    // UUID in classification service DB if it is from there.
-    classificationUUID   : String(36);
-    // For multiple ERPs.
-    logicalSystem        : String(50);
-    active               : Boolean default true;
-    // UNSPSC to Material group mapping
-    mappedClassification : Association to Classification;
-    isCustomDomain       : Boolean default false;
-}
+entity ArtificialIntelligenceConfiguration : cuid {
+    active : Boolean not null;
+    model  : ModelType not null;
+};
 
+entity AIFeatureConfiguration : cuid {
+    active         : Boolean not null;
+    enableToolData : Boolean default true;
+    model          : ModelType not null;
+    featureType    : FeatureType not null;
+};
 
-entity RuleEnforcedDomain: cuid, managed {
-    domain                  : String(100);
-}
+entity ArtificialIntelligenceTokenUsage : cuid {
+    input       : Integer not null;
+    output      : Integer not null;
+    feature     : FeatureType not null;
+    model       : ModelType not null;
+    type        : ConfigurationType not null;
+    generatedAt : DateTime not null;
+};
 
-entity CategorySequences: managed {
-    key type           : String(30);
-        sequenceNumber : Integer64;
-}
+entity ArtificialIntelligenceAcknowledgment : cuid, managed {
+    feature    : FeatureType not null;
+    version    : Integer not null;
+    categoryId : String;
+    value      : Boolean not null;
+};
 
-@cds.persistence.skip
-entity MaterialGroup {
-    name : String(300);
-    code : String(30);
-}
+entity RegenerateControl : cuid, managed {
+    feature    : FeatureType not null;
+    parentId   : UUID not null;
+    changes    : Composition of many ContextChange
+                     on changes.control = $self;
+    executed   : Boolean not null;
+    executedAt : DateTime;
+};
 
-@assert.unique : {name : [userName]}
-entity User : cuid {
-    userName  : String(200);
-    lastName  : String(100);
-    firstName : String(100);
-    loginName : String(200);
-    displayName : String(200);
-    scimExternalId: String(256);
-    createdAt  : Timestamp @cds.on.insert : $now;
-    modifiedAt : Timestamp @cds.on.insert : $now  @cds.on.update : $now;
-    active: Boolean;
-    email: String(200); //Primary email
-    emails: Composition of many Email on emails.user = $self;
-    blocked    : Boolean default false;
-    maxDeletionDate : Date;
-    userUuid : String(36);
-}
-
-@assert.unique : {name : [userName]}
-entity UserBackup : cuid {
-    userName  : String(200);
-    lastName  : String(100);
-    firstName : String(100);
-    loginName : String(200);
-    displayName : String(200);
-    scimExternalId: String(256);
-    createdAt  : Timestamp @cds.on.insert : $now;
-    modifiedAt : Timestamp @cds.on.insert : $now  @cds.on.update : $now;
-    active: Boolean;
-    email: String(200); //Primary email
-    emails: Composition of many EmailBackup on emails.user = $self;
-    blocked    : Boolean default false;
-    maxDeletionDate : Date;
-    userUuid : String(36);
-}
-
-entity UserView              as
-    select from User {
-        *
-    };
-
-entity ActiveUserView              as
-    select from User {
-        key ID, firstName, lastName, userName, email
-    }  where blocked != true and active = true;
-
-entity CategoryPlanUserView as
-    select from User {
-        key ID,
-        firstName,
-        lastName,
-        userName,
-        email,
-        scimExternalId,
-        firstName || ' ' || lastName as fullName : String
-    };
-
-entity Email {
-    key value : String;
-    type : String;
-    isPrimary : Boolean;
-    user : Association to User;
-}
-
-entity EmailBackup {
-    key value : String;
-    type : String;
-    isPrimary : Boolean;
-    user : Association to UserBackup;
-}
-
-@assert.unique : {userAndType : [
-    user,
-    type
-]}
-entity Files : cuid, managed {
-    @Core.MediaType   : mediaType
-    content   : LargeBinary;
-    @Core.IsMediaType : true
-    mediaType : String(100);
-    type      : String(60);
-    fileName  : String(300);
-    user      : Association to one User;
-    username  : String default null;
-}
-
-
-entity DefaultCategories : cuid {
-    user      : Association to User;
-    category      : Association to Category;
-    lastVisitedTime : Timestamp;
-}
-
-@cds.persistence.skip
-entity CategoryPreview : cuid {
-    code       : String(20);
-    name       : String(255);
-    parentCode : String(20);
-    userName   : String(100);
-    firstName  : String(50);
-    lastName   : String(50);
-    approverName   : String(100);
-    firstApproverName  : String(50);
-    lastApproverName   : String(50);
-    isChanged  : Boolean;
-    isUpdated  : Boolean;
-    validType  : String(50); // to check code, name or userName is reach max length
-    messages   : Composition of many ErrorMessage;
-    status     : Integer;
-    fromExcel  : Integer; // 0 excel 1 db
-}
-
-@cds.persistence.skip
-entity ErrorMessage : cuid {
-    message   : String(200);
-    errorCode : Integer;
-    errorType : Integer; // 0 error 1 warning
-}
-
-@cds.persistence.skip
-entity ClassificationCodeToCategoryResponse {
-    code : String(30);
-    category : Association to Category;
-}
+entity ContextChange : cuid {
+    element   : ContextElementType not null;
+    action    : ChangeActionType not null;
+    control   : Association to RegenerateControl not null;
+    changedAt : DateTime not null;
+};
 
 @assert.range
-type PublishStatus : Integer enum {
-    NoStatus        = 0;
-    Published       = 1;
-    PendingPublish  = 2;
-    Publishing      = 3;
-    Error           = 4;
-}
+type TokenType          : String enum {
+    CategoryName                = '{CATEGORY_NAME}';
+    Language                    = '{LANGUAGE}';
+    SubCategories               = '{SUB_CATEGORIES}';
+    ParentCategories            = '{PARENT_CATEGORIES}';
+    Industry                    = '{INDUSTRY}';
+    CostComponents              = '{COST_COMPONENTS}';
+    AllCostComponents           = '{ALL_COST_COMPONENTS}';
+    CostStructureValue          = '{COST_STRUCTURE_VALUE}';
+    SegmentationValue           = '{SEGMENTATION_VALUE}';
+    Region                      = '{REGION}';
+    JsonTools                   = '{JSON_TOOLS}';
+    TemplateAnalysisDescription = '{TEMPLATE_ANALYSIS_DESCRIPTION}';
+    CategoryStrategyTemplate    = '{CATEGORY_STRATEGY_TEMPLATE}';
+    ApprovalDocSummary          = '{APPROVAL_DOC_SUMMARY}';
+};
 
 @assert.range
-type SegmentationCode : String(2) enum {
-    Strategic  = 'SG';
-    Bottleneck = 'BN';
-    Leverage   = 'LG';
-    Routine    = 'RT';
-}
+type ModelType          : String enum {
+    ChatGpt                     = 'CHAT_GPT_4';
+};
 
-type CategoryAccess : Integer enum {
-    EveryCanView = 0;
-    OnlyTeamCanView = 1;
-    TeamAndStakeholderCanView = 2;
-}
+@assert.range
+type FeatureType    : String enum {
+    MarketDynamics              = 'MARKET_DYNAMICS';
+    CostStructure               = 'COST_STRUCTURE';
+    Segmentation                = 'SEGMENTATION';
+    CategoryStrategy            = 'CATEGORY_STRATEGY';
+    Goals                       = 'GOAL';
+    BusinessRequirements        = 'BUSINESS_REQUIREMENTS';
+    RelevantCostComponents      = 'RELEVANT_COST_COMPONENTS';
+    Summary                     = 'SUMMARY';
+    Attachments                 = 'ATTACHMENTS';
+    AttachmentsInitiative       = 'ATTACHMENTS_INITIATIVE';
+    CompanyPolicy               = 'COMPANY_POLICY';
+    LawsAndRegulation           = 'LAW_REGULATION';
+};
 
-entity OperationHistory : cuid {
-    operationalParam     : String(255);
-    operation            : Operation;
-    category             : Association to Category not null;
-    operationalAt        : Timestamp;
-    operator             : Association to one User;
-    before               : String(255);
-    after                : String(255);
-}
+@assert.range
+type ArticleType        : String enum {
+    PreClick                    = 'PRE_CLICK';
+    PostClick                   = 'POST_CLICK';
+};
 
-type Operation : Integer enum {
-    CreateCategory = 0;
-    EditCategory = 1;
-    InactivateCategory = 2;
-    PublishCategory = 3;
-    ActivateCategory = 4;
-    AddClassifications = 5;
-    UnmapClassifications = 6;
-    AddClassificationMappings = 7;
-    UnmapClassificationMappings = 8;
-}
+@assert.range
+type ConfigurationType  : String enum {
+    ArticleData                 = 'ARTICLE_DATA';
+    FeatureData                 = 'FEATURE_DATA';
+};
 
-@cds.persistence.skip
-entity JupiterUserData : managed {
-    displayName: String;
-    email: String;
-    firstName: String;
-    lastName: String;
-    name: String;
-    scopes: Array of String;
-}
+@assert.range
+type ContextElementType : String enum {
+    MarketDynamics              = 'MARKET_DYNAMICS';
+    CostStructure               = 'COST_STRUCTURE';
+    Segmentation                = 'SEGMENTATION';
+    BusinessRequirements        = 'BUSINESS_REQUIREMENTS';
+    Goals                       = 'GOALS';
+    CategoryStrategies          = 'CATEGORY_STRATEGIES';
+    Initiatives                 = 'INITIATIVES';
+    ValueLevers                 = 'VALUE_LEVERS';
+};
 
-@cds.persistence.skip
-entity InitialCategoryTree {
-    categoryTree: Association to many CategoryCoreData;
-    allCategories: Association to many CategoryCoreData;
-}
-
-@cds.persistence.skip
-entity ReloadCategoryTree {
-    categoryTree: Association to many CategoryCoreData;
-    allCategories: Association to many CategoryCoreData;
-    categoryReloaded: Association to one CategoryCoreData;
-}
-
-@cds.persistence.skip
-entity CategoryCoreData : cuid {
-    name             : String(255) not null;
-    code             : String(20) not null;
-    status           : Integer not null default 0; // MDI publish status. 0 is unpublished and 1 is published
-    parent           : Association to one CategoryCoreData;
-    active           : Boolean not null default true; //identify if the category is still active
-    categories       : Association to many CategoryCoreData
-                           on categories.parent = $self;
-    responsible      : Association to one User;
-    approver         : Association to one User;
-    segmentationCode : SegmentationCode;
-    access    : CategoryAccess not null default 0; // 0 means eveny one can view, 1 means only team membeers can view, 2 means team and stakeholder members can view
-    virtual restricted : Boolean;
-    virtual hasChildren: Boolean default false;
-}
+@assert.range
+type ChangeActionType   : String enum {
+    Create                      = 'CREATE';
+    Update                      = 'UPDATE';
+    Delete                      = 'DELETE';
+};

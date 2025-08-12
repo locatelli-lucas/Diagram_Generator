@@ -57,40 +57,59 @@ function parseAttribute(line) {
 }
 
 function getRelationshipType(matchStr) {
-    const associationSyntax = matchStr.includes("Association") ? "-->" : "*--";
-    if (matchStr.includes("of many")) return `"1" ${associationSyntax} "0..N"`;
-    if (matchStr.includes("to many")) return `"0..N" ${associationSyntax} "1"`;
-    if (matchStr.includes("of one")) return `"1" ${associationSyntax} "0..1"`;
-    return `"0..1" ${associationSyntax} "1"`;
+    const relationshipArrow = matchStr.includes("Association") ? "-->" : "*--";
+    if (matchStr.includes("of many")) return `"1" ${relationshipArrow} "0..N"`;
+    if (matchStr.includes("to many")) return `"0..N" ${relationshipArrow} "1"`;
+    if (matchStr.includes("of one")) return `"1" ${relationshipArrow} "0..1"`;
+    return `"0..1" ${relationshipArrow} "1"`;
 }
 
 
 function setRelationship(relationships, key, primary, secondary, matchStr) {
+    let connectionLabel;
+    
+    if (matchStr.includes("Composition")) {
+        connectionLabel = "composes";
+    } else if (matchStr.includes("Association")) {
+        connectionLabel = "associates to";
+    } else {
+        connectionLabel = "relates to";
+    }
+
+    if (matchStr.includes("many")) {
+        connectionLabel += " many";
+    } else if (matchStr.includes("one")) {
+        connectionLabel += " one";
+    }
+    
     relationships.set(key, {
         primary,
         secondary,
-        connectionType: matchStr.startsWith("Association") ? "associates to" : "composes",
+        connectionType: connectionLabel,
         relationshipType: getRelationshipType(matchStr),
     });
 }
 
 
 function handleRelationship(line, entityName, relationships) {
-    const regex = /(?:Composition\s+of\s+(?:one|many)\s+|Association\s+(?:to\s+)?(?:one\s+|many\s+)?)(\w+)/;
-    const match = regex.exec(line);
-    if (!match || match[1] === entityName) return;
+    const compositionRegex = /Composition\s+of\s+(one|many)\s+(\w+)/;
+    const associationRegex = /Association\s+(?:to\s+)?(one|many)\s+(\w+)/;
+    const arrayRegex = /array\s+of\s+(\w+)/;
+    const match = compositionRegex.exec(line) || associationRegex.exec(line) || arrayRegex.exec(line);
+    if (!match || match[2] === entityName) return;
 
-    const key = `${entityName}-${match[1]}`;
+    const key = `${entityName}-${match[2]}`;
 
     if (!relationships.has(key)) {
-        setRelationship(relationships, key, entityName, match[1], match[0]);
+        setRelationship(relationships, key, entityName, match[2], match[0]);
     }
 
-    return { type: match[1], relationshipType: relationships.get(key)?.relationshipType || "", match };
+    return { type: match[2], relationshipType: relationships.get(key)?.relationshipType || "", match };
 }
 
-function processEntity(e, stream, relationships) {
-    const lines = e.split(/\r?\n/);
+function processEntity(entity, stream, relationships) {
+    if(entity.includes("select")) return;
+    const lines = entity.split(/\r?\n/);
     const entityName = parseEntityName(lines[0]);
     if (!entityName) return;
     stream.write("class " + entityName + " {\n");
@@ -103,7 +122,7 @@ function processEntity(e, stream, relationships) {
 
         if (
             line &&
-            (line.includes("Association") || line.includes("Composition"))
+            (line.includes("Association") || line.includes("Composition") || line.includes("array of"))
         ) {
             const relResult = handleRelationship(line, entityName, relationships);
 
@@ -126,7 +145,7 @@ export const writeFile = (output, input) => {
     const entities = splitEntities(data);
     let relationships = new Map();
 
-    stream.write("---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
+    stream.write("```mermaid\n---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
 
     entities.forEach((e) => {
         processEntity(e, stream, relationships);
@@ -137,4 +156,5 @@ export const writeFile = (output, input) => {
             `  ${e.primary} ${e.relationshipType} ${e.secondary} : ${e.connectionType}\n`
         );
     });
+    stream.write("```");
 };

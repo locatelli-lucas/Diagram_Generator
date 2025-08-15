@@ -45,13 +45,19 @@ function parseAttribute(line) {
     let name, type;
     const primitiveTypes = Object.keys(primitives);
     const projectTypes = Object.keys(categoryTaxonomyEntities);
-    if (line.includes(":") && !line.includes("@")) {
+    if (line.includes(":") && !line.includes("@")) {     
         let parts = line.split(":");
         name = parts[0]
             .replace(/key/g, "")
             .replace(/virtual/g, "")
-            .replace(/[^a-zA-Z]+/g, "");
-        type = parts[1].replace(/\(.*?\)/g, "").trim();
+            .replace(/[^a-zA-Z]+/g, "")
+            .trim();
+        type = parts[1]
+            .replace(/\(.*?\)/g, "")
+            .replace(/not null|null/g, "")
+            .replace(/default/g, "")
+            .replace(/[^a-zA-Z]+/g, "")
+            .trim();
 
         const matchedPrimitive = primitiveTypes.find((e) => type.includes(e));
         if (matchedPrimitive) {
@@ -105,8 +111,8 @@ function setRelationship(relationships, key, primary, secondary, matchStr) {
 
 
 function handleRelationship(line, className, relationships) {
-    const compositionRegex = /Composition\s+of\s+(one|many)\s+(\w+)/;
-    const associationRegex = /Association\s+(?:to\s+)?(one|many)\s+(\w+)/;
+    const compositionRegex = /Composition\s+of\s+(one|many)?\s*(\w+)?/;
+    const associationRegex = /Association\s+(?:to\s+)?(one|many)?\s*(\w+)?/;
     const arrayRegex = /array\s+of\s+([^\s;]+)/;
     const match = compositionRegex.exec(line) || associationRegex.exec(line) || arrayRegex.exec(line);
     const secondaryMatch = match[2] ? match[2] : match[1];
@@ -115,7 +121,7 @@ function handleRelationship(line, className, relationships) {
     const key = `${className}-${secondaryMatch}`;
 
     if (!relationships.has(key)) {
-        setRelationship(relationships, key, className, secondaryMatch, match[0]);
+        setRelationship(relationships, key, className, secondaryMatch, line);
     }
 
     return { type: secondaryMatch, relationshipType: relationships.get(key)?.relationshipType || "", match };
@@ -138,9 +144,12 @@ function processEntity(entity, stream, relationships) {
         let { name, type } = parseAttribute(line);
         if (!name || !type) continue;
 
+        const primitiveTypes = Object.keys(primitives)
+
         if (
             line &&
-            (line.includes("Association") || line.includes("Composition") || line.includes("array of"))
+            (line.includes("Association") || line.includes("Composition") || line.includes("array of") &&
+            !primitiveTypes.includes(type))
         ) {
             const relResult = handleRelationship(line, className, relationships);
 

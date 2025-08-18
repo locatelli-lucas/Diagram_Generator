@@ -241,3 +241,7 @@ export const categoryTaxonomyEntities = {
     VersioningTools: "VersioningTools",
     RiskExposureCategoryModelCds: "RiskExposureCategoryModelCds"
 };
+
+export const paths = {
+    CDS_FILES: "./db/"
+}

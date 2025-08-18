@@ -1,5 +1,5 @@
 import fs from "fs";
-import { primitives, categoryTaxonomyEntities } from "../constants/Constants.js";
+import { primitives, categoryTaxonomyEntities, paths } from "../constants/Constants.js";
 
 export function getFiles(path) {
     try {
@@ -12,6 +12,16 @@ export function getFiles(path) {
     }
 }
 
+function getFileByName(entityName, filePath) {
+    try {
+        const files = fs.readdirSync(filePath);
+        return files.find(file => file.includes(entityName));
+    } catch (err) {
+        console.error("Error reading directory:", err);
+        return null;
+    }
+}
+
 function readFile(filePath) {
     try {
         const data = fs.readFileSync(filePath, "utf8");
@@ -21,6 +31,13 @@ function readFile(filePath) {
         return null;
     }
 };
+
+function searchEntityInFile(entityName) {
+    const file = getFileByName(entityName, paths.CDS_FILES);
+    const fileContent = readFile(`${paths.CDS_FILES}${file}`);
+    const entities = splitEntities(fileContent);
+    return entities.find(entity => entity.includes(`entity ${entityName}`) || entity.includes(`type ${entityName}`));
+}
 
 function splitEntities(data) {
     if (!data) {
@@ -45,19 +62,19 @@ function parseAttribute(line) {
     let name, type;
     const primitiveTypes = Object.keys(primitives);
     const projectTypes = Object.keys(categoryTaxonomyEntities);
-    if (line.includes(":") && !line.includes("@")) {     
-        let parts = line.split(":");
-        name = parts[0]
+    if (line.includes(":")) {     
+        let parts = line
             .replace(/key/g, "")
             .replace(/virtual/g, "")
-            .replace(/[^a-zA-Z]+/g, "")
-            .trim();
-        type = parts[1]
+            .replace(/[^a-zA-Z :.]+/g, "")
             .replace(/\(.*?\)/g, "")
             .replace(/not null|null/g, "")
             .replace(/default/g, "")
-            .replace(/[^a-zA-Z]+/g, "")
-            .trim();
+            .split(":");
+        name = parts[0].trim();
+        type = parts[1].trim();
+
+        if (!name) return {};
 
         const matchedPrimitive = primitiveTypes.find((e) => type.includes(e));
         if (matchedPrimitive) {
@@ -67,7 +84,16 @@ function parseAttribute(line) {
             type = matchedProjectType || type;
         }
 
-        if (!type) return null;
+        if (!type) {
+            const foreignType = type.split('.');
+            if (foreignType.length > 1) {
+                type = foreignType[1];
+                const entity = searchEntityInFile(type);
+                processEntity(entity);
+            } else {
+                return {};
+            }
+        }
     } else {
         name = line;
         type = null;
@@ -110,21 +136,20 @@ function setRelationship(relationships, key, primary, secondary, matchStr) {
 }
 
 
-function handleRelationship(line, className, relationships) {
+function handleRelationship(line, className, type, relationships) {
     const compositionRegex = /Composition\s+of\s+(one|many)?\s*(\w+)?/;
     const associationRegex = /Association\s+(?:to\s+)?(one|many)?\s*(\w+)?/;
     const arrayRegex = /array\s+of\s+([^\s;]+)/;
     const match = compositionRegex.exec(line) || associationRegex.exec(line) || arrayRegex.exec(line);
-    const secondaryMatch = match[2] ? match[2] : match[1];
-    if (!match || secondaryMatch === className) return;
+    if (!match || type === className) return;
 
-    const key = `${className}-${secondaryMatch}`;
+    const key = `${className}-${type}`;
 
     if (!relationships.has(key)) {
-        setRelationship(relationships, key, className, secondaryMatch, line);
+        setRelationship(relationships, key, className, type, line);
     }
 
-    return { type: secondaryMatch, relationshipType: relationships.get(key)?.relationshipType || "", match };
+    return { type: type, relationshipType: relationships.get(key)?.relationshipType || "", match };
 }
 
 function processEntity(entity, stream, relationships) {
@@ -146,12 +171,8 @@ function processEntity(entity, stream, relationships) {
 
         const primitiveTypes = Object.keys(primitives)
 
-        if (
-            line &&
-            (line.includes("Association") || line.includes("Composition") || line.includes("array of") &&
-            !primitiveTypes.includes(type))
-        ) {
-            const relResult = handleRelationship(line, className, relationships);
+        if (line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
+            const relResult = handleRelationship(line, className, type, relationships);
 
             if(relResult == null) continue;
 

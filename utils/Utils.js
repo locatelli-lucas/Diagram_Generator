@@ -4,21 +4,11 @@ import { primitives, categoryTaxonomyEntities, paths } from "../constants/Consta
 export function getFiles(path) {
     try {
         const files = fs.readdirSync(path);
-        const filteredFiles = files.filter(file => file.endsWith("schema.cds"));
+        const filteredFiles = files.filter(file => file.endsWith(".cds"));
         return filteredFiles;
     } catch (err) {
         console.error("Error reading directory:", err);
         return [];
-    }
-}
-
-function getFileByName(entityName, filePath) {
-    try {
-        const files = fs.readdirSync(filePath);
-        return files.find(file => file.includes(entityName));
-    } catch (err) {
-        console.error("Error reading directory:", err);
-        return null;
     }
 }
 
@@ -32,10 +22,30 @@ function readFile(filePath) {
     }
 };
 
-function searchEntityInFile(entityName) {
-    const file = getFileByName(entityName, paths.CDS_FILES);
-    const fileContent = readFile(`${paths.CDS_FILES}${file}`);
-    const entities = splitEntities(fileContent);
+function searchForNamespaceFile(namespace, entityName) {
+    const files = getFiles(paths.CDS_FILES);
+
+    for (const file of files) {
+        const content = readFile(`${paths.CDS_FILES}${file}`);
+        if (!content) continue;
+
+        const lines = content.split(/\r?\n/);
+        for (const line of lines) {
+            if (line.includes("namespace") && !line.includes(namespace)) {
+                break;
+            }
+            if (line.startsWith("namespace") && line.endsWith(`${namespace};`)) {
+                const entity = searchEntityInFile(content, entityName);
+                if (entity) {
+                    return entity;
+                }
+            }
+        }
+    }
+}
+
+function searchEntityInFile(content, entityName) {
+    const entities = splitEntities(content);
     return entities.find(entity => entity.includes(`entity ${entityName}`) || entity.includes(`type ${entityName}`));
 }
 
@@ -59,10 +69,10 @@ function parseEntityName(line) {
 }
 
 function parseAttribute(line) {
-    let name, type;
+    let name, type, remanentEntity;
     const primitiveTypes = Object.keys(primitives);
     const projectTypes = Object.keys(categoryTaxonomyEntities);
-    if (line.includes(":")) {     
+    if (line.includes(":")) {
         let parts = line
             .replace(/key/g, "")
             .replace(/virtual/g, "")
@@ -84,12 +94,12 @@ function parseAttribute(line) {
             type = matchedProjectType || type;
         }
 
-        if (!type) {
-            const foreignType = type.split('.');
-            if (foreignType.length > 1) {
-                type = foreignType[1];
-                const entity = searchEntityInFile(type);
-                processEntity(entity);
+        if (!type || parts[1].includes('.')) {
+            const splitedType = parts[1].split('.');
+            if (splitedType.length > 1) {
+                type = splitedType[1];
+                const namespace = splitedType[0].split(" ").pop();
+                remanentEntity = searchForNamespaceFile(namespace, type);
             } else {
                 return {};
             }
@@ -98,7 +108,7 @@ function parseAttribute(line) {
         name = line;
         type = null;
     }
-    return { name, type };
+    return { name, type, remanentEntity };
 }
 
 function getRelationshipType(matchStr) {
@@ -112,7 +122,7 @@ function getRelationshipType(matchStr) {
 
 function setRelationship(relationships, key, primary, secondary, matchStr) {
     let connectionLabel;
-    
+
     if (matchStr.includes("Composition")) {
         connectionLabel = "composes";
     } else if (matchStr.includes("Association")) {
@@ -126,7 +136,7 @@ function setRelationship(relationships, key, primary, secondary, matchStr) {
     } else if (matchStr.includes("one")) {
         connectionLabel += " one";
     }
-    
+
     relationships.set(key, {
         primary,
         secondary,
@@ -153,9 +163,9 @@ function handleRelationship(line, className, type, relationships) {
 }
 
 function processEntity(entity, stream, relationships) {
-    if(entity.includes("select") || entity.includes("enum")) return;
+    if (entity.includes("select") || entity.includes("enum")) return;
     const lines = entity.split(/\r?\n/);
-    const {className, classType} = parseEntityName(lines[0]);
+    const { className, classType } = parseEntityName(lines[0]);
     if (!className || !classType) return;
     if (classType === "entity") {
         stream.write("class " + className + " {\n");
@@ -163,18 +173,23 @@ function processEntity(entity, stream, relationships) {
         stream.write("class " + className + " ~type~ {\n");
     }
 
+    let remanentEntities = new Set();
+
     for (let i = 1; i < lines.length; i++) {
         let line = lines[i].replace(/;/g, "");
         if (!line.trim() || (line.includes("array of") && line.includes("{"))) continue;
-        let { name, type } = parseAttribute(line);
+        let { name, type, remanentEntity } = parseAttribute(line);
         if (!name || !type) continue;
+        if (remanentEntity) {
+            remanentEntities.add(remanentEntity);
+        };
 
         const primitiveTypes = Object.keys(primitives)
 
         if (line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
             const relResult = handleRelationship(line, className, type, relationships);
 
-            if(relResult == null) continue;
+            if (relResult == null) continue;
 
             type = relResult.type;
         } else if (!type) {
@@ -184,6 +199,12 @@ function processEntity(entity, stream, relationships) {
         stream.write(`  ${name} : ${type}\n`);
     }
     stream.write("}\n");
+
+    if (remanentEntities.length > 0) {
+        for (const e of remanentEntities) {
+            processEntity(e, stream, relationships);
+        }
+    }
 }
 
 export function writeFile(output, input) {

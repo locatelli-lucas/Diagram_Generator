@@ -68,21 +68,21 @@ function parseEntityName(line) {
     return { className, classType };
 }
 
-function parseAttribute(line) {
+function parseAttribute(line, data) {
     let name, type, remanentEntity;
     const primitiveTypes = Object.keys(primitives);
     const projectTypes = Object.keys(categoryTaxonomyEntities);
     if (line.includes(":")) {
         let parts = line
             .replace(/key/g, "")
-            .replace(/virtual/g, "")
+            .replace(/virtual|not null|null|default|odata|self|array of/g, "")
             .replace(/[^a-zA-Z :.]+/g, "")
             .replace(/\(.*?\)/g, "")
             .replace(/not null|null/g, "")
             .replace(/default/g, "")
             .split(":");
         name = parts[0].trim();
-        type = parts[1].trim();
+        type = parts[1].trim().split(' on ')[0].split(" ").pop();
 
         if (!name) return {};
 
@@ -90,11 +90,11 @@ function parseAttribute(line) {
         if (matchedPrimitive) {
             type = matchedPrimitive;
         } else {
-            const matchedProjectType = projectTypes.find((e) => type.includes(e));
+            const matchedProjectType = projectTypes.find((e) => type === e);
             type = matchedProjectType || type;
         }
 
-        if (!type || parts[1].includes('.')) {
+        if (!type || (parts[1].includes('.') && !data.includes(`entity ${type}`) && !data.includes(`type ${type}`))) {
             const splitedType = parts[1].split('.');
             if (splitedType.length > 1) {
                 type = splitedType[1];
@@ -162,7 +162,7 @@ function handleRelationship(line, className, type, relationships) {
     return { type: type, relationshipType: relationships.get(key)?.relationshipType || "", match };
 }
 
-function processEntity(entity, stream, relationships) {
+function processEntity(entity, stream, relationships, data) {
     if (entity.includes("select") || entity.includes("enum")) return;
     const lines = entity.split(/\r?\n/);
     const { className, classType } = parseEntityName(lines[0]);
@@ -178,7 +178,7 @@ function processEntity(entity, stream, relationships) {
     for (let i = 1; i < lines.length; i++) {
         let line = lines[i].replace(/;/g, "");
         if (!line.trim() || (line.includes("array of") && line.includes("{"))) continue;
-        let { name, type, remanentEntity } = parseAttribute(line);
+        let { name, type, remanentEntity } = parseAttribute(line, data);
         if (!name || !type) continue;
         if (remanentEntity) {
             remanentEntities.add(remanentEntity);
@@ -217,7 +217,7 @@ export function writeFile(output, input) {
     stream.write("```mermaid\n---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
 
     entities.forEach((e) => {
-        processEntity(e, stream, relationships);
+        processEntity(e, stream, relationships, data);
     });
 
     relationships.forEach((e) => {

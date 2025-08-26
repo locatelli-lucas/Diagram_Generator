@@ -58,7 +58,11 @@ function splitEntities(data) {
     return data
         .split(/(?=^(entity|type)\s)/gm)
         .map((entity) => entity.trim())
-        .filter((entity) => entity.length > 0 && (entity.startsWith("entity") || entity.startsWith("type")));
+        .filter((entity) => entity.length > 0 && 
+            (entity.startsWith("entity") &&
+            !entity.endsWith("entity") ||
+            entity.startsWith("type") && 
+            !entity.endsWith("type")));
 };
 
 function parseEntityName(line) {
@@ -75,18 +79,25 @@ function parseAttribute(line, data) {
     if (line.includes(":")) {
         let parts = line
             .replace(/key/g, "")
-            .replace(/virtual|not null|null|default|odata|self|array of/g, "")
+            .replace(/virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
+            .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
             .replace(/[^a-zA-Z :.]+/g, "")
             .replace(/\(.*?\)/g, "")
-            .replace(/not null|null/g, "")
-            .replace(/default/g, "")
             .split(":");
         name = parts[0].trim();
-        type = parts[1].trim().split(' on ')[0].split(" ").pop();
+        type = parts[1].trim();
+
+        if (type.includes(" on ")) {
+            type = type.split(" on ")[0].split(" ").pop();
+        }
+
+        if (type.includes("Composition") || type.includes("Association")) {
+            type = type.split(" ").pop();
+        }
 
         if (!name) return {};
 
-        const matchedPrimitive = primitiveTypes.find((e) => type.includes(e));
+        const matchedPrimitive = primitiveTypes.find((e) => type === e);
         if (matchedPrimitive) {
             type = matchedPrimitive;
         } else {
@@ -95,10 +106,10 @@ function parseAttribute(line, data) {
         }
 
         if (!type || (parts[1].includes('.') && !data.includes(`entity ${type}`) && !data.includes(`type ${type}`))) {
-            const splitedType = parts[1].split('.');
+            const splitedType = parts[1].split(" ").find(part => part.includes(".")).split(".");
             if (splitedType.length > 1) {
                 type = splitedType[1];
-                const namespace = splitedType[0].split(" ").pop();
+                const namespace = splitedType[0];
                 remanentEntity = searchForNamespaceFile(namespace, type);
             } else {
                 return {};
@@ -176,8 +187,8 @@ function processEntity(entity, stream, relationships, data) {
     let remanentEntities = new Set();
 
     for (let i = 1; i < lines.length; i++) {
-        let line = lines[i].replace(/;/g, "");
-        if (!line.trim() || (line.includes("array of") && line.includes("{"))) continue;
+        let line = lines[i].trim().replace(/;/g, "");
+        if (!line.trim() ||  (line.includes("array of") && line.includes("{")) || line.startsWith("@")) continue;
         let { name, type, remanentEntity } = parseAttribute(line, data);
         if (!name || !type) continue;
         if (remanentEntity) {
@@ -189,8 +200,10 @@ function processEntity(entity, stream, relationships, data) {
         if (line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
             const relResult = handleRelationship(line, className, type, relationships);
 
-            if (relResult == null) continue;
-
+            if (relResult == null) {
+                stream.write(`  ${name} : ${type}\n`);
+                continue;
+            }
             type = relResult.type;
         } else if (!type) {
             stream.write(`${line}\n`);
@@ -200,9 +213,9 @@ function processEntity(entity, stream, relationships, data) {
     }
     stream.write("}\n");
 
-    if (remanentEntities.length > 0) {
+    if (remanentEntities.size > 0) {
         for (const e of remanentEntities) {
-            processEntity(e, stream, relationships);
+            processEntity(e, stream, relationships, data);
         }
     }
 }

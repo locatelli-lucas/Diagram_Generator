@@ -31,19 +31,22 @@ function searchForNamespaceFile(namespace, entityName) {
 
     for (const file of files) {
         const content = readFile(`${paths.CDS_FILES}${file}`);
-        if (!content) continue;
+        const fileNamespace = content.match(/namespace\s+([\w.]+);/);
+        let hasNamespace = false;
 
-        const lines = content.split(/\r?\n/);
-        for (const line of lines) {
-            if (line.includes("namespace") && !line.includes(namespace)) {
-                break;
-            }
-            if (line.startsWith("namespace") && line.endsWith(`${namespace};`)) {
-                const entity = searchEntityInFile(content, entityName);
-                if (entity) {
-                    return { entity, file };
-                }
-            }
+        if (!content || 
+            !fileNamespace || 
+            !fileNamespace[1].endsWith(namespace)) {
+            continue;
+        }
+
+        if (content && fileNamespace[1].endsWith(namespace)) {
+            hasNamespace = true;
+        }
+        
+        const entity = searchEntityInFile(content, entityName);
+        if (entity) {
+            return { entity, file };
         }
     }
 }

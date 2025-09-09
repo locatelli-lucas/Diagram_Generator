@@ -1,6 +1,10 @@
 import fs from "fs";
 import { primitives, categoryTaxonomyEntities, paths } from "../constants/Constants.js";
 
+const primitiveTypes = Object.keys(primitives);
+const projectTypes = Object.keys(categoryTaxonomyEntities);
+const globalEntities = new Map();
+
 export function getFiles(path) {
     try {
         const files = fs.readdirSync(path);
@@ -64,6 +68,7 @@ function splitEntities(data) {
         .filter(entity => entity !== "entity" &&
             entity !== "type" &&
             !entity.includes('enum') &&
+            !entity.includes('select') &&
             (entity.startsWith('entity') || entity.startsWith('type'))
         );
 };
@@ -77,8 +82,6 @@ function parseEntityName(line) {
 
 function parseAttribute(line, data) {
     let name, type, remanentEntity;
-    const primitiveTypes = Object.keys(primitives);
-    const projectTypes = Object.keys(categoryTaxonomyEntities);
     if (line.includes(":")) {
         let parts = line
             .replace(/[@$]\S+/g, "")
@@ -194,11 +197,22 @@ function handleRelationship(line, className, type, relationships) {
     return { type: type, relationshipType: relationships.get(key)?.relationshipType || "", match };
 }
 
+function addEntityToGlobalMap(entityName, entity) {
+    globalEntities.set(entityName, entity);
+}
+
 function processEntity(entity, stream, relationships, data, remanentEntities, isRemanentEntity) {
-    if (entity.includes("select") || entity.includes("enum")) return;
     const lines = entity.split(/\r?\n/);
     const { className, classType } = parseEntityName(lines[0]);
-    if (!className || !classType || remanentEntities && remanentEntities.has(className)) return;
+
+    addEntityToGlobalMap(className, entity);
+
+    if (!className || 
+        !classType || 
+        remanentEntities && 
+        remanentEntities.has(className)
+    ) return;
+
     if (classType === "entity") {
         stream.write("class " + className + " {\n");
     } else {
@@ -208,14 +222,18 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
     for (let i = 1; i < lines.length; i++) {
         try {
             let line = lines[i].trim().replace(/;/g, "");
-            if (!line.trim() ||  (line.includes("array of") && line.includes("{")) || line.startsWith("@")) continue;
+            if (!line.trim() ||  
+                (line.includes("array of") && 
+                line.includes("{")) || 
+                line.startsWith("@")) {
+                    continue;
+                }
+
             let { name, type, remanentEntity } = parseAttribute(line, data);
             if (!name || !type) continue;
             if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
                 remanentEntities.set(type, {remanentEntity, printed: false});
             };
-
-            const primitiveTypes = Object.keys(primitives)
 
             if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
                 const relResult = handleRelationship(line, className, type, relationships);

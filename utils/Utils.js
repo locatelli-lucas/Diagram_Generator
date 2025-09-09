@@ -55,15 +55,17 @@ function splitEntities(data) {
         return [];
     }
 
-    return data
-        .split(/(?=^(entity|type|annotate)\s)/gm)
-        .map((entity) => entity.trim())
-        .filter(entity => entity !== "entity"
-            // (entity.startsWith("entity") &&
-            // !entity.endsWith("entity") ||
-            // entity.startsWith("type") && 
-            // !entity.endsWith("type"))
-            );
+    const entities = data.match(/entity\s+[\s\S]*?}/g) || [];
+    const types = data.match(/type\s+[\s\S]*?;/g) || [];
+
+    return entities
+        .concat(types)
+        .map(entity => entity.trim())
+        .filter(entity => entity !== "entity" &&
+            entity !== "type" &&
+            !entity.includes('enum') &&
+            (entity.startsWith('entity') || entity.startsWith('type'))
+        );
 };
 
 function parseEntityName(line) {
@@ -79,6 +81,7 @@ function parseAttribute(line, data) {
     const projectTypes = Object.keys(categoryTaxonomyEntities);
     if (line.includes(":")) {
         let parts = line
+            .replace(/[@$]\S+/g, "")
             .replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
             .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
             .replace(/[^a-zA-Z :.]+/g, "")
@@ -109,7 +112,12 @@ function parseAttribute(line, data) {
             type = matchedProjectType || type;
         }
 
-        if (!type || (parts[1].includes('.') && !data.includes(`entity ${type}`) && !data.includes(`type ${type}`))) {
+        if (!type || 
+            (parts[1].includes('.') && 
+            !data.includes(`entity ${type} `) && 
+            !data.includes(`entity ${type}:`) &&
+            !data.includes(`type ${type} `)) &&
+            !data.includes(`type ${type}:`)) {
             let splitedType = parts[1];
             if (!splitedType && splitedType.length === 1) {
                 splitedType = splitedType.split(".")[1];
@@ -198,29 +206,33 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
     }
 
     for (let i = 1; i < lines.length; i++) {
-        let line = lines[i].trim().replace(/;/g, "");
-        if (!line.trim() ||  (line.includes("array of") && line.includes("{")) || line.startsWith("@")) continue;
-        let { name, type, remanentEntity } = parseAttribute(line, data);
-        if (!name || !type) continue;
-        if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
-            remanentEntities.set(type, {remanentEntity, printed: false});
-        };
+        try {
+            let line = lines[i].trim().replace(/;/g, "");
+            if (!line.trim() ||  (line.includes("array of") && line.includes("{")) || line.startsWith("@")) continue;
+            let { name, type, remanentEntity } = parseAttribute(line, data);
+            if (!name || !type) continue;
+            if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
+                remanentEntities.set(type, {remanentEntity, printed: false});
+            };
 
-        const primitiveTypes = Object.keys(primitives)
+            const primitiveTypes = Object.keys(primitives)
 
-        if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
-            const relResult = handleRelationship(line, className, type, relationships);
+            if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
+                const relResult = handleRelationship(line, className, type, relationships);
 
-            if (relResult == null) {
-                stream.write(`  ${name} : ${type}\n`);
+                if (relResult == null) {
+                    stream.write(`  ${name} : ${type}\n`);
+                    continue;
+                }
+                type = relResult.type;
+            } else if (!type) {
+                stream.write(`${line}\n`);
                 continue;
             }
-            type = relResult.type;
-        } else if (!type) {
-            stream.write(`${line}\n`);
-            continue;
+            stream.write(`  ${name} : ${type}\n`);
+        } catch (error) {
+            console.error(`${error} happend on entity ${entity} in line ${i}`)
         }
-        stream.write(`  ${name} : ${type}\n`);
     }
     stream.write("}\n");
 

@@ -5,6 +5,7 @@ const primitiveTypes = Object.keys(primitives);
 const projectTypes = Object.keys(categoryTaxonomyEntities);
 const globalEntities = new Map();
 
+// Reads directory and returns only .cds files
 export function getFiles(path) {
     try {
         const files = fs.readdirSync(path);
@@ -16,6 +17,7 @@ export function getFiles(path) {
     }
 }
 
+// Reads file content synchronously and returns as string
 function readFile(filePath) {
     try {
         const data = fs.readFileSync(filePath, "utf8");
@@ -26,56 +28,55 @@ function readFile(filePath) {
     }
 };
 
+// Searches for an entity in files matching the given namespace
 function searchForNamespaceFile(namespace, entityName) {
-    const files = getFiles(paths.CDS_FILES);
+    const cdsFiles = getFiles(paths.CDS_FILES);
 
-    for (const file of files) {
-        const content = readFile(`${paths.CDS_FILES}${file}`);
-        const fileNamespace = content.match(/namespace\s+([\w.]+);/);
-        let hasNamespace = false;
+    for (const fileName of cdsFiles) {
+        const fileContent = readFile(`${paths.CDS_FILES}${fileName}`);
+        const namespaceMatch = fileContent.match(/namespace\s+([\w.]+);/);
 
-        if (!content || 
-            !fileNamespace || 
-            !fileNamespace[1].endsWith(namespace)) {
+        if (!fileContent || 
+            !namespaceMatch || 
+            !namespaceMatch[1].endsWith(namespace)) {
             continue;
         }
-
-        if (content && fileNamespace[1].endsWith(namespace)) {
-            hasNamespace = true;
-        }
         
-        const entity = searchEntityInFile(content, entityName);
-        if (entity) {
-            return { entity, file };
+        const foundEntity = searchEntityInFile(fileContent, entityName);
+        if (foundEntity) {
+            return { entity: foundEntity, file: fileName };
         }
     }
 }
 
+// Finds a specific entity definition within file content
 function searchEntityInFile(content, entityName) {
     const entities = splitEntities(content);
     return entities.find(entity => entity.includes(`entity ${entityName}`) || entity.includes(`type ${entityName}`));
 }
 
+// Splits CDS content into individual entity and type definitions
 function splitEntities(data) {
     if (!data) {
         console.error("No data provided to split entities.");
         return [];
     }
 
-    const entities = data.match(/entity\s+[\s\S]*?}/g) || [];
-    const types = data.match(/type\s+[\s\S]*?;/g) || [];
+    const entityMatches = data.match(/entity\s+[\s\S]*?}/g) || [];
+    const typeMatches = data.match(/type\s+[\s\S]*?;/g) || [];
 
-    return entities
-        .concat(types)
-        .map(entity => entity.trim())
-        .filter(entity => entity !== "entity" &&
-            entity !== "type" &&
-            !entity.includes('enum') &&
-            !entity.includes('select') &&
-            (entity.startsWith('entity') || entity.startsWith('type'))
+    return entityMatches
+        .concat(typeMatches)
+        .map(entityDefinition => entityDefinition.trim())
+        .filter(entityDefinition => entityDefinition !== "entity" &&
+            entityDefinition !== "type" &&
+            !entityDefinition.includes('enum') &&
+            !entityDefinition.includes('select') &&
+            (entityDefinition.startsWith('entity') || entityDefinition.startsWith('type'))
         );
 };
 
+// Parses entity name and type from the first line of definition
 function parseEntityName(line) {
     const match = line.match(/^(entity|type)\s+(\w+)/);
     const className = match ? match[2] : null;
@@ -83,78 +84,106 @@ function parseEntityName(line) {
     return { className, classType };
 }
 
-function filterLine(line) {
-    let foundName, foundType;
-    let parts = line
+// Removes CDS annotations and comments from a line
+function removeAnnotationsAndComments(line) {
+    return line
         .replace(/[@$]\S+/g, "")
-        .replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
-        .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "");
+}
+
+// Removes CDS keywords from a line
+function removeKeywords(line) {
+    return line.replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "");
+}
+
+// Cleans line from special characters and splits by colon
+function cleanAndSplit(line) {
+    return line
         .replace(/[^a-zA-Z :.]+/g, "")
         .replace(/\(.*?\)/g, "")
         .split(":");
-    foundName = parts[0].trim();
-    foundType = parts[1].trim();
-
-    return { foundName, foundType, parts };
 }
 
+// Filters and parses attribute line to extract name and type
+function filterLine(line) {
+    let attributeName, attributeType, lineParts;
+    line = removeAnnotationsAndComments(line);
+    line = removeKeywords(line);
+    lineParts = cleanAndSplit(line);
+
+    attributeName = lineParts[0].trim();
+    attributeType = lineParts[1].trim();
+
+    return { foundName: attributeName, foundType: attributeType, parts: lineParts };
+}
+
+// Searches for type definition in data or external files
 function findTypeInData(type, data, parts) {
-    let remanentEntity;
-    if (!type ||
-        (parts[1].includes('.') &&
-            !data.includes(`entity ${type} `) &&
-            !data.includes(`entity ${type}:`) &&
-            !data.includes(`type ${type} `)) &&
-        !data.includes(`type ${type}:`)) {
-        let splitedType = parts[1];
-        if (!splitedType && splitedType.length === 1) {
-            splitedType = splitedType.split(".")[1];
+    let remainingEntity;
+    if (!type || (parts[1].includes('.') && !data.includes(`entity ${type} `) && !data.includes(`entity ${type}:`) && !data.includes(`type ${type} `)) && !data.includes(`type ${type}:`)) {
+        let splittedType = parts[1];
+        if (!splittedType && splittedType.length === 1) {
+            splittedType = splittedType.split(".")[1];
         } else {
             try {
-                splitedType = splitedType.split(" ").find(part => part.includes(".")).split(".");
+                splittedType = splittedType.split(" ").find(part => part.includes(".")).split(".");
             } catch (error) {
                 console.error(`Error in entity ${data}, line: ${line}`);
             }
         }
-        if (splitedType.length > 1) {
-            type = splitedType[1];
-            const namespace = splitedType[0];
-            remanentEntity = searchForNamespaceFile(namespace, type);
+        if (splittedType.length > 1) {
+            type = splittedType[1];
+            const namespace = splittedType[0];
+            remainingEntity = searchForNamespaceFile(namespace, type);
         } else {
             return {};
         }
     }
-    return { type, remanentEntity };
+    return { type, remanentEntity: remainingEntity };
 }
 
+// Matches type against primitive or project types
 function matchType(type, data, parts) {
-    const matchedPrimitive = primitiveTypes.find((e) => type === e);
+    const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
     if (matchedPrimitive) {
         type = matchedPrimitive;
     } else {
-        const matchedProjectType = projectTypes.find((e) => type === e);
+        const matchedProjectType = projectTypes.find((projectType) => type === projectType);
         type = matchedProjectType || type;
     }
     return findTypeInData(type, data, parts);
 }
 
-function parseType(type, data, parts) {
-    if (type.includes(" on ")) {
-        type = type.split(" on ")[0].split(" ").pop();
-    }
+// Extracts base type from Composition or Association declarations
+function extractTypeFromCompositionOrAssociation(type) {
     if (type.includes("Composition") || type.includes("Association")) {
         type = type.split(" ").pop();
-
         if (type.includes(".")) {
             type = type.split(".").pop();
         }
     }
+    return type;
+}
+
+// Extracts type from "on" clause in CDS definitions
+function extractTypeFromOnClause(type) {
+    if (type.includes(" on ")) {
+        return type.split(" on ")[0].split(" ").pop();
+    }
+    return type;
+}
+
+// Parses type definitions and applies transformations
+function parseType(type, data, parts) {
+    type = extractTypeFromOnClause(type);
+    type = extractTypeFromCompositionOrAssociation(type);
 
     return matchType(type, data, parts);
 }
 
+// Parses attribute definition line and extracts name, type and relationships
 function parseAttribute(line, data) {
-    let name, type, remanentEntity;
+    let name, type, remainingEntity;
     if (line.includes(":")) {
         let { foundName, foundType, parts } = filterLine(line);
         name = foundName;
@@ -162,39 +191,41 @@ function parseAttribute(line, data) {
 
         if (!name || !type) return {};
 
-        const response = parseType(type, data, parts);
-        type = response.type;
-        remanentEntity = response.remanentEntity;
+        const parseTypeResult = parseType(type, data, parts);
+        type = parseTypeResult.type;
+        remainingEntity = parseTypeResult.remanentEntity;
     } else {
         name = line;
         type = null;
     }
-    return { name, type, remanentEntity };
+    return { name, type, remanentEntity: remainingEntity };
 }
 
-function getRelationshipType(matchStr) {
-    const relationshipArrow = matchStr.includes("Association") ? "-->" : "*--";
-    if (matchStr.includes("of many")) return `"1" ${relationshipArrow} "0..N"`;
-    if (matchStr.includes("to many")) return `"0..N" ${relationshipArrow} "1"`;
-    if (matchStr.includes("of one")) return `"1" ${relationshipArrow} "0..1"`;
+// Determines relationship arrow type based on cardinality
+function getRelationshipType(relationshipMatch) {
+    const relationshipArrow = relationshipMatch.includes("Association") ? "-->" : "*--";
+    if (relationshipMatch.includes("of many")) return `"1" ${relationshipArrow} "0..N"`;
+    if (relationshipMatch.includes("to many")) return `"0..N" ${relationshipArrow} "1"`;
+    if (relationshipMatch.includes("of one")) return `"1" ${relationshipArrow} "0..1"`;
     return `"0..1" ${relationshipArrow} "1"`;
 }
 
 
-function setRelationship(relationships, key, primary, secondary, matchStr) {
+// Creates and stores relationship information between entities
+function setRelationship(relationships, key, primary, secondary, relationshipMatch) {
     let connectionLabel;
 
-    if (matchStr.includes("Composition")) {
+    if (relationshipMatch.includes("Composition")) {
         connectionLabel = "composes";
-    } else if (matchStr.includes("Association")) {
+    } else if (relationshipMatch.includes("Association")) {
         connectionLabel = "associates to";
     } else {
         connectionLabel = "relates to";
     }
 
-    if (matchStr.includes("many")) {
+    if (relationshipMatch.includes("many")) {
         connectionLabel += " many";
-    } else if (matchStr.includes("one")) {
+    } else if (relationshipMatch.includes("one")) {
         connectionLabel += " one";
     }
 
@@ -202,83 +233,69 @@ function setRelationship(relationships, key, primary, secondary, matchStr) {
         primary,
         secondary,
         connectionType: connectionLabel,
-        relationshipType: getRelationshipType(matchStr),
+        relationshipType: getRelationshipType(relationshipMatch),
     });
 }
 
 
+// Handles relationship parsing and registration for entity connections
 function handleRelationship(line, className, type, relationships) {
     const compositionRegex = /Composition\s+of\s+(one|many)?\s*(\w+)?/;
     const associationRegex = /Association\s+(?:to\s+)?(one|many)?\s*(\w+)?/;
     const arrayRegex = /array\s+of\s+([^\s;]+)/;
-    const match = compositionRegex.exec(line) || associationRegex.exec(line) || arrayRegex.exec(line);
-    if (!match || type === className) return;
+    const regexMatch = compositionRegex.exec(line) || associationRegex.exec(line) || arrayRegex.exec(line);
+    if (!regexMatch || type === className) return;
 
-    const key = `${className}-${type}`;
+    const relationshipKey = `${className}-${type}`;
 
-    if (!relationships.has(key)) {
-        setRelationship(relationships, key, className, type, line);
+    if (!relationships.has(relationshipKey)) {
+        setRelationship(relationships, relationshipKey, className, type, line);
     }
 
-    return { type: type, relationshipType: relationships.get(key)?.relationshipType || "", match };
+    return { type: type, relationshipType: relationships.get(relationshipKey)?.relationshipType || "", match: regexMatch };
 }
 
+// Adds entity to global cache for reuse
 function addEntityToGlobalMap(entityName, entity) {
     globalEntities.set(entityName, entity);
 }
 
-function processEntity(entity, stream, relationships, data, remanentEntities, isRemanentEntity) {
-    const lines = entity.split(/\r?\n/);
-    const { className, classType } = parseEntityName(lines[0]);
-
-    if (globalEntities.has(className)) {
-        const cachedEntity = globalEntities.get(className);
-        stream.write(cachedEntity);
-        return;
-    }
-
-    if (!className ||
-        !classType ||
-        remanentEntities &&
-        remanentEntities.has(className)
-    ) return;
-
+// Writes entity header with appropriate class syntax for Mermaid
+function writeEntityHeader(stream, className, classType) {
     let cache = `class ${className} `;
-
     if (classType === "entity") {
         cache += "{\n"
-        // stream.write("class " + className + " {\n");
     } else {
         cache += "~type~ {\n"
-        // stream.write("class " + className + " ~type~ {\n");
     }
-
     stream.write(cache);
+    return cache;
+}
 
+// Processes all attributes of an entity and writes them to stream
+function processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, isRemanentEntity) {
+    let cache = "";
     for (let i = 1; i < lines.length; i++) {
         try {
             let line = lines[i].trim().replace(/;/g, "");
-            if (!line.trim() ||
-                (line.includes("array of") &&
-                    line.includes("{")) ||
-                line.startsWith("@")) {
+            if (!line.trim() || (line.includes("array of") && line.includes("{")) || line.startsWith("@")) {
                 continue;
             }
 
             let { name, type, remanentEntity } = parseAttribute(line, data);
+
             if (!name || !type) continue;
-            if (remanentEntities &&
-                remanentEntity &&
-                !remanentEntities.has(type)) {
-                remanentEntities.set(type, { remanentEntity, printed: false });
+            if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
+                remanentEntities.set(
+                    type,
+                    {
+                        remanentEntity,
+                        printed: false
+                    }
+                );
             }
 
-            if (!isRemanentEntity &&
-                line &&
-                (line.includes("Association") ||
-                    line.includes("Composition") ||
-                    line.includes("array of") &&
-                    !primitiveTypes.includes(type))) {
+            if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
                 const relResult = handleRelationship(line, className, type, relationships);
 
                 if (relResult == null) {
@@ -295,45 +312,70 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
             stream.write(`  ${name} : ${type}\n`);
             cache += `  ${name} : ${type}\n`;
         } catch (error) {
-            console.error(`${error} happend on entity ${entity} in line ${i}`)
+            console.error(`${error} happened on entity ${className} in line ${i}`)
         }
     }
+    return cache;
+}
+
+// Finalizes entity definition by closing brackets and caching
+function finalizeEntity(stream, className, cache) {
     stream.write("}\n");
     cache += "}\n";
-
     addEntityToGlobalMap(className, cache);
+}
+
+// Processes a complete entity definition and writes to Mermaid stream
+function processEntity(entity, stream, relationships, data, remanentEntities, isRemanentEntity) {
+    const lines = entity.split(/\r?\n/);
+    const { className, classType } = parseEntityName(lines[0]);
+
+    if (globalEntities.has(className)) {
+        const cachedEntity = globalEntities.get(className);
+        stream.write(cachedEntity);
+        return;
+    }
+
+    if (!className || !classType || (remanentEntities && remanentEntities.has(className))) return;
+
+    let cache = writeEntityHeader(stream, className, classType);
+    const attributesCache = processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, isRemanentEntity);
+    cache += attributesCache;
+    finalizeEntity(stream, className, cache);
 
     if (remanentEntities && remanentEntities.size > 0) {
         processRemanentEntities(remanentEntities, stream, relationships);
     }
 }
 
+// Processes entities that were referenced but not yet defined
 export function processRemanentEntities(remanentEntities, stream, relationships) {
-    for (const e of remanentEntities.values()) {
-        if (e.printed) continue;
-        const data = readFile(`${paths.CDS_FILES}${e.remanentEntity.file}`);
-        processEntity(e.remanentEntity.entity, stream, relationships, data, undefined, true);
-        e.printed = true;
+    for (const entityEntry of remanentEntities.values()) {
+        if (entityEntry.printed) continue;
+        const fileContent = readFile(`${paths.CDS_FILES}${entityEntry.remanentEntity.file}`);
+        processEntity(entityEntry.remanentEntity.entity, stream, relationships, fileContent, undefined, true);
+        entityEntry.printed = true;
     }
 }
 
+// Main function that converts CDS file to Mermaid class diagram
 export function writeFile(output, input) {
     fs.writeFileSync(output, "", { flag: "w" });
-    const data = readFile(input);
+    const fileContent = readFile(input);
     const stream = fs.createWriteStream(output, { flags: "a" });
-    const entities = splitEntities(data);
+    const entities = splitEntities(fileContent);
     let relationships = new Map();
     let remanentEntities = new Map();
 
     stream.write("```mermaid\n---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
 
-    entities.forEach((e) => {
-        processEntity(e, stream, relationships, data, remanentEntities, false);
+    entities.forEach((entityDefinition) => {
+        processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, false);
     });
 
-    relationships.forEach((e) => {
+    relationships.forEach((relationshipData) => {
         stream.write(
-            `  ${e.primary} ${e.relationshipType} ${e.secondary} : ${e.connectionType}\n`
+            `  ${relationshipData.primary} ${relationshipData.relationshipType} ${relationshipData.secondary} : ${relationshipData.connectionType}\n`
         );
     });
     stream.write("```");

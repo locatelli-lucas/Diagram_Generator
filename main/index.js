@@ -1,11 +1,11 @@
 import { writeFile, getFiles } from "../utils/Utils.js";
 
-// const files = getFiles("./db/");
-// console.log(files);
+const files = getFiles("./db/");
+console.log(files);
 
-// files.forEach(file => {
-//     if(file.endsWith("schema.cds"))
-//         writeFile(`./out/${file.replace(".cds", ".md")}`, `./db/${file}`);
-// })
+files.forEach(file => {
+    if(file.endsWith("schema.cds"))
+        writeFile(`./out/${file.replace(".cds", ".md")}`, `./db/${file}`);
+})
 
-writeFile("./files/categoryPlan-schema.md", "./db/categoryPlan-schema.cds");
+// writeFile("./files/categoryPlan-schema.md", "./db/categoryPlan-schema.cds");

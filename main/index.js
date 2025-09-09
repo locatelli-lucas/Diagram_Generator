@@ -8,4 +8,4 @@ import { writeFile, getFiles } from "../utils/Utils.js";
 //         writeFile(`./out/${file.replace(".cds", ".md")}`, `./db/${file}`);
 // })
 
-writeFile("./files/categoryValueLever-schema.md", "./db/categoryValueLever-schema.cds");
+writeFile("./files/categoryPlan-schema.md", "./db/categoryPlan-schema.cds");

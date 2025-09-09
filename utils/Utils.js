@@ -41,7 +41,7 @@ function searchForNamespaceFile(namespace, entityName) {
             if (line.startsWith("namespace") && line.endsWith(`${namespace};`)) {
                 const entity = searchEntityInFile(content, entityName);
                 if (entity) {
-                    return {entity, file};
+                    return { entity, file };
                 }
             }
         }
@@ -78,6 +78,18 @@ function parseEntityName(line) {
     const className = match ? match[2] : null;
     const classType = match ? match[1] : null;
     return { className, classType };
+}
+
+function filterLine(line) {
+    let parts = line
+        .replace(/[@$]\S+/g, "")
+        .replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
+        .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
+        .replace(/[^a-zA-Z :.]+/g, "")
+        .replace(/\(.*?\)/g, "")
+        .split(":");
+    name = parts[0].trim();
+    type = parts[1].trim();
 }
 
 function parseAttribute(line, data) {
@@ -205,54 +217,77 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
     const lines = entity.split(/\r?\n/);
     const { className, classType } = parseEntityName(lines[0]);
 
-    addEntityToGlobalMap(className, entity);
+    if (globalEntities.has(className)) {
+        const cachedEntity = globalEntities.get(className);
+        stream.write(cachedEntity);
+        return;
+    }
 
-    if (!className || 
-        !classType || 
-        remanentEntities && 
+    if (!className ||
+        !classType ||
+        remanentEntities &&
         remanentEntities.has(className)
     ) return;
 
+    let cache = `class ${className} `;
+
     if (classType === "entity") {
-        stream.write("class " + className + " {\n");
+        cache += "{\n"
+        // stream.write("class " + className + " {\n");
     } else {
-        stream.write("class " + className + " ~type~ {\n");
+        cache += "~type~ {\n"
+        // stream.write("class " + className + " ~type~ {\n");
     }
+
+    stream.write(cache);
 
     for (let i = 1; i < lines.length; i++) {
         try {
             let line = lines[i].trim().replace(/;/g, "");
-            if (!line.trim() ||  
-                (line.includes("array of") && 
-                line.includes("{")) || 
+            if (!line.trim() ||
+                (line.includes("array of") &&
+                    line.includes("{")) ||
                 line.startsWith("@")) {
-                    continue;
-                }
+                continue;
+            }
 
             let { name, type, remanentEntity } = parseAttribute(line, data);
             if (!name || !type) continue;
-            if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
-                remanentEntities.set(type, {remanentEntity, printed: false});
+            if (remanentEntities &&
+                remanentEntity &&
+                !remanentEntities.has(type)) {
+                remanentEntities.set(type, { remanentEntity, printed: false });
             };
 
-            if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
+            if (!isRemanentEntity &&
+                line &&
+                (line.includes("Association") ||
+                    line.includes("Composition") ||
+                    line.includes("array of") &&
+                    !primitiveTypes.includes(type))) {
                 const relResult = handleRelationship(line, className, type, relationships);
 
                 if (relResult == null) {
                     stream.write(`  ${name} : ${type}\n`);
+                    cache += `  ${name} : ${type}\n`;
                     continue;
                 }
                 type = relResult.type;
             } else if (!type) {
                 stream.write(`${line}\n`);
+                cache += `${line}\n`;
                 continue;
             }
             stream.write(`  ${name} : ${type}\n`);
+            cache += `  ${name} : ${type}\n`;
         } catch (error) {
             console.error(`${error} happend on entity ${entity} in line ${i}`)
         }
     }
     stream.write("}\n");
+    cache += "}\n";
+
+    addEntityToGlobalMap(className, cache);
 
     if (remanentEntities && remanentEntities.size > 0) {
         processRemanentEntities(remanentEntities, stream, relationships);
@@ -261,11 +296,11 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
 
 export function processRemanentEntities(remanentEntities, stream, relationships) {
     for (const e of remanentEntities.values()) {
-            if (e.printed) continue;
-            const data = readFile(`./db/${e.remanentEntity.file}`);
-            processEntity(e.remanentEntity.entity, stream, relationships, data, undefined, true);
-            e.printed = true;
-        }
+        if (e.printed) continue;
+        const data = readFile(`${paths.CDS_FILES}${e.remanentEntity.file}`);
+        processEntity(e.remanentEntity.entity, stream, relationships, data, undefined, true);
+        e.printed = true;
+    }
 }
 
 export function writeFile(output, input) {

@@ -81,6 +81,7 @@ function parseEntityName(line) {
 }
 
 function filterLine(line) {
+    let foundName, foundType;
     let parts = line
         .replace(/[@$]\S+/g, "")
         .replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
@@ -88,29 +89,23 @@ function filterLine(line) {
         .replace(/[^a-zA-Z :.]+/g, "")
         .replace(/\(.*?\)/g, "")
         .split(":");
-    name = parts[0].trim();
-    type = parts[1].trim();
+    foundName = parts[0].trim();
+    foundType = parts[1].trim();
+
+    return { foundName, foundType, parts };
 }
 
 function parseAttribute(line, data) {
     let name, type, remanentEntity;
     if (line.includes(":")) {
-        let parts = line
-            .replace(/[@$]\S+/g, "")
-            .replace(/key|virtual|false|true|not null|null|default|odata|self|array of|localized/g, "")
-            .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
-            .replace(/[^a-zA-Z :.]+/g, "")
-            .replace(/\(.*?\)/g, "")
-            .split(":");
-        name = parts[0].trim();
-        type = parts[1].trim();
+        let { foundName, foundType, parts } = filterLine(line);
+        name = foundName;
+        type = foundType;
 
         if (!name || !type) return {};
-
         if (type.includes(" on ")) {
             type = type.split(" on ")[0].split(" ").pop();
         }
-
         if (type.includes("Composition") || type.includes("Association")) {
             type = type.split(" ").pop();
 
@@ -127,11 +122,11 @@ function parseAttribute(line, data) {
             type = matchedProjectType || type;
         }
 
-        if (!type || 
-            (parts[1].includes('.') && 
-            !data.includes(`entity ${type} `) && 
-            !data.includes(`entity ${type}:`) &&
-            !data.includes(`type ${type} `)) &&
+        if (!type ||
+            (parts[1].includes('.') &&
+                !data.includes(`entity ${type} `) &&
+                !data.includes(`entity ${type}:`) &&
+                !data.includes(`type ${type} `)) &&
             !data.includes(`type ${type}:`)) {
             let splitedType = parts[1];
             if (!splitedType && splitedType.length === 1) {

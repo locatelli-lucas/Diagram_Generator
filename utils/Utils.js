@@ -95,6 +95,61 @@ function filterLine(line) {
     return { foundName, foundType, parts };
 }
 
+function findTypeInData(type, data, parts) {
+    let remanentEntity;
+    if (!type ||
+        (parts[1].includes('.') &&
+            !data.includes(`entity ${type} `) &&
+            !data.includes(`entity ${type}:`) &&
+            !data.includes(`type ${type} `)) &&
+        !data.includes(`type ${type}:`)) {
+        let splitedType = parts[1];
+        if (!splitedType && splitedType.length === 1) {
+            splitedType = splitedType.split(".")[1];
+        } else {
+            try {
+                splitedType = splitedType.split(" ").find(part => part.includes(".")).split(".");
+            } catch (error) {
+                console.error(`Error in entity ${data}, line: ${line}`);
+            }
+        }
+        if (splitedType.length > 1) {
+            type = splitedType[1];
+            const namespace = splitedType[0];
+            remanentEntity = searchForNamespaceFile(namespace, type);
+        } else {
+            return {};
+        }
+    }
+    return { type, remanentEntity };
+}
+
+function matchType(type, data, parts) {
+    const matchedPrimitive = primitiveTypes.find((e) => type === e);
+    if (matchedPrimitive) {
+        type = matchedPrimitive;
+    } else {
+        const matchedProjectType = projectTypes.find((e) => type === e);
+        type = matchedProjectType || type;
+    }
+    return findTypeInData(type, data, parts);
+}
+
+function parseType(type, data, parts) {
+    if (type.includes(" on ")) {
+        type = type.split(" on ")[0].split(" ").pop();
+    }
+    if (type.includes("Composition") || type.includes("Association")) {
+        type = type.split(" ").pop();
+
+        if (type.includes(".")) {
+            type = type.split(".").pop();
+        }
+    }
+
+    return matchType(type, data, parts);
+}
+
 function parseAttribute(line, data) {
     let name, type, remanentEntity;
     if (line.includes(":")) {
@@ -103,49 +158,10 @@ function parseAttribute(line, data) {
         type = foundType;
 
         if (!name || !type) return {};
-        if (type.includes(" on ")) {
-            type = type.split(" on ")[0].split(" ").pop();
-        }
-        if (type.includes("Composition") || type.includes("Association")) {
-            type = type.split(" ").pop();
 
-            if (type.includes(".")) {
-                type = type.split(".").pop();
-            }
-        }
-
-        const matchedPrimitive = primitiveTypes.find((e) => type === e);
-        if (matchedPrimitive) {
-            type = matchedPrimitive;
-        } else {
-            const matchedProjectType = projectTypes.find((e) => type === e);
-            type = matchedProjectType || type;
-        }
-
-        if (!type ||
-            (parts[1].includes('.') &&
-                !data.includes(`entity ${type} `) &&
-                !data.includes(`entity ${type}:`) &&
-                !data.includes(`type ${type} `)) &&
-            !data.includes(`type ${type}:`)) {
-            let splitedType = parts[1];
-            if (!splitedType && splitedType.length === 1) {
-                splitedType = splitedType.split(".")[1];
-            } else {
-                try {
-                    splitedType = splitedType.split(" ").find(part => part.includes(".")).split(".");
-                } catch (error) {
-                    console.error(`Error in entity ${data}, line: ${line}`);
-                }
-            }
-            if (splitedType.length > 1) {
-                type = splitedType[1];
-                const namespace = splitedType[0];
-                remanentEntity = searchForNamespaceFile(namespace, type);
-            } else {
-                return {};
-            }
-        }
+        const response = parseType(type, data, parts);
+        type = response.type;
+        remanentEntity = response.remanentEntity;
     } else {
         name = line;
         type = null;
@@ -252,7 +268,7 @@ function processEntity(entity, stream, relationships, data, remanentEntities, is
                 remanentEntity &&
                 !remanentEntities.has(type)) {
                 remanentEntities.set(type, { remanentEntity, printed: false });
-            };
+            }
 
             if (!isRemanentEntity &&
                 line &&

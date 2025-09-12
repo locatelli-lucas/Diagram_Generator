@@ -1,5 +1,6 @@
 import fs from "fs";
 import { primitives, categoryTaxonomyEntities, paths } from "../constants/Constants.js";
+import path from "path";
 
 const primitiveTypes = Object.keys(primitives);
 const projectTypes = Object.keys(categoryTaxonomyEntities);
@@ -203,11 +204,11 @@ function parseAttribute(line, data) {
 
 // Determines relationship arrow type based on cardinality
 function getRelationshipType(relationshipMatch) {
-    const relationshipArrow = relationshipMatch.includes("Association") ? "-->" : "*--";
-    if (relationshipMatch.includes("of many")) return `"1" ${relationshipArrow} "0..N"`;
-    if (relationshipMatch.includes("to many")) return `"0..N" ${relationshipArrow} "1"`;
-    if (relationshipMatch.includes("of one")) return `"1" ${relationshipArrow} "0..1"`;
-    return `"0..1" ${relationshipArrow} "1"`;
+    const relationshipArrow = relationshipMatch.includes("Association") ? "-->" : "--";
+    if (relationshipMatch.includes("of many")) return `"1" ${relationshipArrow} "N"`;
+    if (relationshipMatch.includes("to many")) return `"N" ${relationshipArrow} "1"`;
+    if (relationshipMatch.includes("of one")) return `"1" ${relationshipArrow} "1"`;
+    return `"1" ${relationshipArrow} "1"`;
 }
 
 
@@ -361,7 +362,7 @@ export function writeFile(output, input) {
     let relationships = new Map();
     let remanentEntities = new Map();
 
-    stream.write("```mermaid\n---\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n");
+    stream.write(`\`\`\`mermaid\n---\ntitle: ${path.basename(input)}\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n`);
 
     entities.forEach((entityDefinition) => {
         processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, false);

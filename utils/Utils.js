@@ -295,7 +295,7 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
                 );
             }
 
-            if (!isRemanentEntity && line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
+            if (line && (line.includes("Association") || line.includes("Composition") || line.includes("array of") && !primitiveTypes.includes(type))) {
                 const relResult = handleRelationship(line, className, type, relationships);
 
                 if (relResult == null) {
@@ -329,12 +329,6 @@ function finalizeEntity(stream, className, cache) {
 function processEntity(entity, stream, relationships, data, remanentEntities, isRemanentEntity) {
     const lines = entity.split(/\r?\n/);
     const { className, classType } = parseEntityName(lines[0]);
-
-    if (globalEntities.has(className)) {
-        const cachedEntity = globalEntities.get(className);
-        stream.write(cachedEntity);
-        return;
-    }
 
     if (!className || !classType || (remanentEntities && remanentEntities.has(className))) return;
 
@@ -374,6 +368,7 @@ export function writeFile(output, input) {
     });
 
     relationships.forEach((relationshipData) => {
+        if (!globalEntities.has(relationshipData.secondary)) return;
         stream.write(
             `  ${relationshipData.primary} ${relationshipData.relationshipType} ${relationshipData.secondary} : ${relationshipData.connectionType}\n`
         );

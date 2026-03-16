@@ -29,17 +29,24 @@ function readFile(filePath) {
     }
 };
 
+function getNamespace(fileContent) {
+    const matches = fileContent.match(/namespace\s+([\w.]+);/)
+    return matches[1].split(".").pop();
+}
+
 // Searches for an entity in files matching the given namespace
 function searchForNamespaceFile(namespace, entityName) {
     const cdsFiles = getFiles(paths.CDS_FILES);
 
     for (const fileName of cdsFiles) {
+        if(!fileName.endsWith("schema.cds")) continue;
+
         const fileContent = readFile(`${paths.CDS_FILES}${fileName}`);
-        const namespaceMatch = fileContent.match(/namespace\s+([\w.]+);/);
+        const namespaceMatch = getNamespace(fileContent);
 
         if (!fileContent || 
             !namespaceMatch || 
-            !namespaceMatch[1].endsWith(namespace)) {
+            namespaceMatch != namespace) {
             continue;
         }
         
@@ -262,8 +269,8 @@ function addEntityToGlobalMap(entityName, entity) {
 }
 
 // Writes entity header with appropriate class syntax for Mermaid
-function writeEntityHeader(stream, className, classType) {
-    let cache = `class ${className} `;
+function writeEntityHeader(stream, className, classType, namespace) {
+    let cache = `\n class ${className} `;
     if (classType === "entity") {
         cache += "{\n"
     } else {
@@ -274,7 +281,7 @@ function writeEntityHeader(stream, className, classType) {
 }
 
 // Processes all attributes of an entity and writes them to stream
-function processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, isRemanentEntity) {
+function processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, namespace, entitiesPerNamespace) {
     let cache = "";
     for (let i = 1; i < lines.length; i++) {
         try {
@@ -284,6 +291,12 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
             }
 
             let { name, type, remanentEntity } = parseAttribute(line, data);
+
+            if (!entitiesPerNamespace.has(namespace)) {
+                entitiesPerNamespace.set(namespace, [])
+            } else {
+                entitiesPerNamespace.get(namespace).push(className);
+            }
 
             if (!name || !type) continue;
             if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
@@ -321,20 +334,20 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
 
 // Finalizes entity definition by closing brackets and caching
 function finalizeEntity(stream, className, cache) {
-    stream.write("}\n");
+    stream.write(" }\n");
     cache += "}\n";
     addEntityToGlobalMap(className, cache);
 }
 
 // Processes a complete entity definition and writes to Mermaid stream
-function processEntity(entity, stream, relationships, data, remanentEntities, isRemanentEntity) {
+function processEntity(entity, stream, relationships, data, remanentEntities, namespace, entitiesPerNamespace) {
     const lines = entity.split(/\r?\n/);
     const { className, classType } = parseEntityName(lines[0]);
 
     if (!className || !classType || (remanentEntities && remanentEntities.has(className))) return;
 
-    let cache = writeEntityHeader(stream, className, classType);
-    const attributesCache = processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, isRemanentEntity);
+    let cache = writeEntityHeader(stream, className, classType, namespace);
+    const attributesCache = processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, namespace, entitiesPerNamespace);
     cache += attributesCache;
     finalizeEntity(stream, className, cache);
 
@@ -353,20 +366,39 @@ export function processRemanentEntities(remanentEntities, stream, relationships)
     }
 }
 
+function setClassColor(value, randomNum, stream) {
+    stream.write("classDef ");
+    for(let i = 0; i < value.length; i++) {
+        if(i == value.length - 1) {
+            stream.write(`${value[i]} `);
+        } else {
+            stream.write(`${value[i]}, `);
+        }
+    }
+    stream.write(`fill:#${randomNum}`);
+}
+
 // Main function that converts CDS file to Mermaid class diagram
 export function writeFile(output, input) {
     fs.writeFileSync(output, "", { flag: "w" });
     const fileContent = readFile(input);
+    const namespace = getNamespace(fileContent);
     const stream = fs.createWriteStream(output, { flags: "a" });
     const entities = splitEntities(fileContent);
     let relationships = new Map();
     let remanentEntities = new Map();
+    let entitiesPerNamespace = new Map();
 
-    stream.write(`\`\`\`mermaid\n---\ntitle: ${path.basename(input)}\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\n`);
+    stream.write(`\`\`\`mermaid\n---\ntitle: ${path.basename(input)}\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\ndirection LR`);
 
     entities.forEach((entityDefinition) => {
-        processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, false);
+        processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, namespace, entitiesPerNamespace);
     });
+
+    entitiesPerNamespace.forEach((value, key) => {
+        let randomNum = Math.ceil(Math.random() * 10) + 1;
+        setClassColor(value, randomNum, stream);
+    })
 
     relationships.forEach((relationshipData) => {
         if (!globalEntities.has(relationshipData.secondary)) return;

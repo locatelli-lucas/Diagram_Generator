@@ -352,16 +352,17 @@ function processEntity(entity, stream, relationships, data, remanentEntities, na
     finalizeEntity(stream, className, cache);
 
     if (remanentEntities && remanentEntities.size > 0) {
-        processRemanentEntities(remanentEntities, stream, relationships);
+        processRemanentEntities(remanentEntities, stream, relationships, entitiesPerNamespace);
     }
 }
 
 // Processes entities that were referenced but not yet defined
-export function processRemanentEntities(remanentEntities, stream, relationships) {
+export function processRemanentEntities(remanentEntities, stream, relationships, entitiesPerNamespace) {
     for (const entityEntry of remanentEntities.values()) {
         if (entityEntry.printed) continue;
         const fileContent = readFile(`${paths.CDS_FILES}${entityEntry.remanentEntity.file}`);
-        processEntity(entityEntry.remanentEntity.entity, stream, relationships, fileContent, undefined, true);
+        const namespace = getNamespace(fileContent);
+        processEntity(entityEntry.remanentEntity.entity, stream, relationships, fileContent, undefined, namespace, entitiesPerNamespace);
         entityEntry.printed = true;
     }
 }
@@ -370,9 +371,9 @@ function setClassColor(value, randomNum, stream) {
     stream.write("classDef ");
     for(let i = 0; i < value.length; i++) {
         if(i == value.length - 1) {
-            stream.write(`${value[i]} `);
+            stream.write(`${value[i]}\n`);
         } else {
-            stream.write(`${value[i]}, `);
+            stream.write(`${value[i]},`);
         }
     }
     stream.write(`fill:#${randomNum}`);
@@ -396,7 +397,7 @@ export function writeFile(output, input) {
     });
 
     entitiesPerNamespace.forEach((value, key) => {
-        let randomNum = Math.ceil(Math.random() * 10) + 1;
+        let randomNum = Math.ceil(Math.random() * 999) + 1;
         setClassColor(value, randomNum, stream);
     })
 

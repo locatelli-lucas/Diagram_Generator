@@ -269,8 +269,16 @@ function addEntityToGlobalMap(entityName, entity) {
 }
 
 // Writes entity header with appropriate class syntax for Mermaid
-function writeEntityHeader(stream, className, classType, namespace) {
-    let cache = `\n class ${className} `;
+function writeEntityHeader(stream, className, classType, namespace, entitiesPerNamespace) {
+    let cache = `\n class ${className}:::${className}CSSClass`;
+
+    if(!entitiesPerNamespace.has(namespace)) {
+        entitiesPerNamespace.set(namespace, new Set());
+        entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
+    } else {
+        entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
+    }
+
     if (classType === "entity") {
         cache += "{\n"
     } else {
@@ -291,12 +299,6 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
             }
 
             let { name, type, remanentEntity } = parseAttribute(line, data);
-
-            if (!entitiesPerNamespace.has(namespace)) {
-                entitiesPerNamespace.set(namespace, [])
-            } else {
-                entitiesPerNamespace.get(namespace).push(className);
-            }
 
             if (!name || !type) continue;
             if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
@@ -346,7 +348,7 @@ function processEntity(entity, stream, relationships, data, remanentEntities, na
 
     if (!className || !classType || (remanentEntities && remanentEntities.has(className))) return;
 
-    let cache = writeEntityHeader(stream, className, classType, namespace);
+    let cache = writeEntityHeader(stream, className, classType, namespace, entitiesPerNamespace);
     const attributesCache = processEntityAttributes(lines, stream, className, data, relationships, remanentEntities, namespace, entitiesPerNamespace);
     cache += attributesCache;
     finalizeEntity(stream, className, cache);
@@ -368,15 +370,17 @@ export function processRemanentEntities(remanentEntities, stream, relationships,
 }
 
 function setClassColor(value, randomNum, stream) {
-    stream.write("classDef ");
-    for(let i = 0; i < value.length; i++) {
-        if(i == value.length - 1) {
-            stream.write(`${value[i]}\n`);
+    stream.write("  classDef ");
+    let i = 0;
+    for(const name of value) {
+        if(i == value.size - 1) {
+            stream.write(`${name} `);
         } else {
-            stream.write(`${value[i]},`);
+            stream.write(`${name},`);
         }
+        i++;
     }
-    stream.write(`fill:#${randomNum}`);
+    stream.write(`fill:#${randomNum}\n`);
 }
 
 // Main function that converts CDS file to Mermaid class diagram
@@ -396,8 +400,8 @@ export function writeFile(output, input) {
         processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, namespace, entitiesPerNamespace);
     });
 
-    entitiesPerNamespace.forEach((value, key) => {
-        let randomNum = Math.ceil(Math.random() * 999) + 1;
+    entitiesPerNamespace.forEach(value => {
+        let randomNum = Math.ceil(Math.random() * (999 - 200)) + 200;
         setClassColor(value, randomNum, stream);
     })
 

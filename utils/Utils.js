@@ -292,8 +292,8 @@ function writeEntityHeader(stream, className, classType, namespace, entitiesPerN
     return cache;
 }
 
-function getAttribute(lines, data) {
-    let line = lines[i].trim().replace(/;/g, "");
+function getAttribute(currentLine, data) {
+    let line = currentLine.trim().replace(/;/g, "");
     if (!line.trim() || (line.includes("array of") && line.includes("{")) || line.startsWith("@")) {
         return;
     }
@@ -301,7 +301,7 @@ function getAttribute(lines, data) {
     return parseAttribute(line, data);
 }
 
-function addRemanentEntities(remanentEntities, remanentEntity) {
+function addRemanentEntities(remanentEntities, remanentEntity, type) {
     if (remanentEntities && remanentEntity && !remanentEntities.has(type)) {
         remanentEntities.set(
             type,
@@ -322,11 +322,12 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
     let cache = "";
     for (let i = 1; i < lines.length; i++) {
         try {
-            let { name, type, remanentEntity, line } = getAttribute(lines, data)
+            let currentLine = lines[i];
+            let { name, type, remanentEntity, line } = getAttribute(currentLine, data)
 
             if(!name || !type || !line) continue;
 
-            addRemanentEntities(remanentEntities, remanentEntity);
+            addRemanentEntities(remanentEntities, remanentEntity, type);
 
             if (hasRelationship(line, type)) {
                 const relResult = handleRelationship(line, className, type, relationships);
@@ -358,9 +359,13 @@ function finalizeEntity(stream, className, cache) {
     addEntityToGlobalMap(className, cache);
 }
 
+function splitClasses(entity) {
+    return entity.split(/\r?\n/);
+}
+
 // Processes a complete entity definition and writes to Mermaid stream
-function processEntity(entity, stream, relationships, data, remanentEntities, namespace, entitiesPerNamespace, isolatedEntity) {
-    const lines = entity.split(/\r?\n/);
+function processEntity(entity, stream, relationships, data, remanentEntities, namespace, entitiesPerNamespace) {
+    const lines = splitClasses(entity);
     const { className, classType } = parseEntityName(lines[0]);
     let cache;
 
@@ -402,9 +407,25 @@ function setClassColor(value, randomNum, stream) {
     stream.write(`fill:#${randomNum}\n`);
 }
 
-function isolateClass(isolatedClass, entities) {
+function isolateClass(isolatedClass, entities, fileContent) {
     const entity = searchEntityInFile(undefined, isolatedClass, entities);
-    
+    const lines = splitClasses(entity);
+    let filteredEntities = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const { type } = getAttribute(lines[i], fileContent);
+        const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
+        if(matchedPrimitive) continue;
+
+        const foundEntity = searchEntityInFile(fileContent, type, entities);
+
+        if(foundEntity) {
+            filteredEntities.push(foundEntity);
+        }
+        
+    }
+    filteredEntities.push(entity);
+    return filteredEntities;
 }
 
 // Main function that converts CDS file to Mermaid class diagram
@@ -413,16 +434,18 @@ export function writeFile(output, input, isolatedEntity) {
     const fileContent = readFile(input);
     const namespace = getNamespace(fileContent);
     const stream = fs.createWriteStream(output, { flags: "a" });
-    const entities = splitEntities(fileContent);
+    let entities = splitEntities(fileContent);
     let relationships = new Map();
     let remanentEntities = new Map();
     let entitiesPerNamespace = new Map();
 
-    isolateClass(isolatedEntity, entities)
+    if(isolatedEntity) {
+        entities = isolateClass(isolatedEntity, entities, fileContent);
+    }
 
     stream.write(`\`\`\`mermaid\n---\ntitle: ${path.basename(input)}\nconfig:\n  look: neo\n  layout: elk\n  theme: dark\n---\nclassDiagram\ndirection LR`);
 
-    if (entities.length > 1) {
+    if (entities.length >= 1) {
         entities.forEach((entityDefinition) => {
             processEntity(entityDefinition, stream, relationships, fileContent, remanentEntities, namespace, entitiesPerNamespace, isolatedEntity);
         });

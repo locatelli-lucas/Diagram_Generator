@@ -8,4 +8,4 @@ console.log(files);
 //         writeFile(`./out/${file.replace(".cds", ".md")}`, `./db/${file}`);
 // })
 
-writeFile("./files/category.md", "./db/categoryPlan-schema.cds", "ApprovalDocumentComment");
+writeFile("./files/category.md", "./db/categoryPlan-schema.cds", "DefaultPlan");

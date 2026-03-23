@@ -325,7 +325,7 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
             let currentLine = lines[i];
             let { name, type, remanentEntity, line } = getAttribute(currentLine, data)
 
-            if(!name || !type || !line) continue;
+            if (!name || !type || !line) continue;
 
             addRemanentEntities(remanentEntities, remanentEntity, type);
 
@@ -407,24 +407,60 @@ function setClassColor(value, randomNum, stream) {
     stream.write(`fill:#${randomNum}\n`);
 }
 
+// Helper function to recursively collect related entities
+function collectRelatedEntities(currentEntity, currentFileContent, currentEntities) {
+    const entityLines = splitClasses(currentEntity);
+
+    for (let i = 1; i < entityLines.length; i++) {
+        const attributeData = getAttribute(entityLines[i], currentFileContent);
+        if (!attributeData || !attributeData.type) continue;
+
+        const { type, remanentEntity } = attributeData;
+
+        // Skip if already processed or is a primitive type
+        if (processedTypes.has(type)) continue;
+        const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
+        if (matchedPrimitive) continue;
+
+        processedTypes.add(type);
+
+        // First, try to find the entity in the current file
+        let foundEntity = searchEntityInFile(currentFileContent, type, currentEntities);
+
+        // If not found in current file, check if it's in a remanent entity (from another file)
+        if (!foundEntity && remanentEntity) {
+            const externalFileContent = readFile(`${paths.CDS_FILES}${remanentEntity.file}`);
+            const externalEntities = splitEntities(externalFileContent);
+            foundEntity = remanentEntity.entity;
+
+            // Add the external entity and recursively find its related entities
+            if (foundEntity) {
+                filteredEntities.push(foundEntity);
+                collectRelatedEntities(foundEntity, externalFileContent, externalEntities);
+            }
+        } else if (foundEntity) {
+            // Add the entity from the current file
+            filteredEntities.push(foundEntity);
+            // Recursively collect its related entities
+            collectRelatedEntities(foundEntity, currentFileContent, currentEntities);
+        }
+    }
+}
+
 function isolateClass(isolatedClass, entities, fileContent) {
     const entity = searchEntityInFile(undefined, isolatedClass, entities);
-    const lines = splitClasses(entity);
+    if (!entity) return [];
+
     let filteredEntities = [];
+    let processedTypes = new Set();
 
-    for (let i = 1; i < lines.length; i++) {
-        const { type } = getAttribute(lines[i], fileContent);
-        const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
-        if(matchedPrimitive) continue;
+    // Start with the isolated class
+    processedTypes.add(isolatedClass);
+    collectRelatedEntities(entity, fileContent, entities);
 
-        const foundEntity = searchEntityInFile(fileContent, type, entities);
-
-        if(foundEntity) {
-            filteredEntities.push(foundEntity);
-        }
-        
-    }
+    // Add the main entity at the end (or beginning, depending on preference)
     filteredEntities.push(entity);
+
     return filteredEntities;
 }
 
@@ -439,7 +475,7 @@ export function writeFile(output, input, isolatedEntity) {
     let remanentEntities = new Map();
     let entitiesPerNamespace = new Map();
 
-    if(isolatedEntity) {
+    if (isolatedEntity) {
         entities = isolateClass(isolatedEntity, entities, fileContent);
     }
 

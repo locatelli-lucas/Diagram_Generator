@@ -3,7 +3,11 @@ import { primitives, categoryTaxonomyEntities, paths } from "../constants/Consta
 import path from "path";
 
 const primitiveTypes = Object.keys(primitives);
-const projectTypes = Object.keys(categoryTaxonomyEntities);
+
+// Flatten all entities from the new nested structure into a single array
+const projectTypes = Object.values(categoryTaxonomyEntities)
+    .flatMap(fileData => Object.keys(fileData.entities));
+
 const globalEntities = new Map();
 
 // Reads directory and returns only .cds files
@@ -278,10 +282,9 @@ function writeEntityHeader(stream, className, classType, namespace, entitiesPerN
 
     if (!entitiesPerNamespace.has(namespace)) {
         entitiesPerNamespace.set(namespace, new Set());
-        entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
-    } else {
-        entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
     }
+
+    entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
 
     if (classType === "entity") {
         cache += `:::${className}CSSClass{\n`
@@ -393,7 +396,11 @@ export function processRemanentEntities(remanentEntities, stream, relationships,
     }
 }
 
-function setClassColor(value, randomNum, stream) {
+function getColor(namespace) {
+    return categoryTaxonomyEntities[namespace].color;
+}
+
+function setClassColor(key, value, stream) {
     stream.write("  classDef ");
     let i = 0;
     for (const name of value) {
@@ -404,47 +411,8 @@ function setClassColor(value, randomNum, stream) {
         }
         i++;
     }
-    stream.write(`fill:#${randomNum}\n`);
-}
-
-// Helper function to recursively collect related entities
-function collectRelatedEntities(currentEntity, currentFileContent, currentEntities) {
-    const entityLines = splitClasses(currentEntity);
-
-    for (let i = 1; i < entityLines.length; i++) {
-        const attributeData = getAttribute(entityLines[i], currentFileContent);
-        if (!attributeData || !attributeData.type) continue;
-
-        const { type, remanentEntity } = attributeData;
-
-        // Skip if already processed or is a primitive type
-        if (processedTypes.has(type)) continue;
-        const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
-        if (matchedPrimitive) continue;
-
-        processedTypes.add(type);
-
-        // First, try to find the entity in the current file
-        let foundEntity = searchEntityInFile(currentFileContent, type, currentEntities);
-
-        // If not found in current file, check if it's in a remanent entity (from another file)
-        if (!foundEntity && remanentEntity) {
-            const externalFileContent = readFile(`${paths.CDS_FILES}${remanentEntity.file}`);
-            const externalEntities = splitEntities(externalFileContent);
-            foundEntity = remanentEntity.entity;
-
-            // Add the external entity and recursively find its related entities
-            if (foundEntity) {
-                filteredEntities.push(foundEntity);
-                collectRelatedEntities(foundEntity, externalFileContent, externalEntities);
-            }
-        } else if (foundEntity) {
-            // Add the entity from the current file
-            filteredEntities.push(foundEntity);
-            // Recursively collect its related entities
-            collectRelatedEntities(foundEntity, currentFileContent, currentEntities);
-        }
-    }
+    const color = getColor(key)
+    stream.write(`fill:#${color}\n`);
 }
 
 function isolateClass(isolatedClass, entities, fileContent) {
@@ -453,6 +421,46 @@ function isolateClass(isolatedClass, entities, fileContent) {
 
     let filteredEntities = [];
     let processedTypes = new Set();
+
+    // Helper function to recursively collect related entities
+    function collectRelatedEntities(currentEntity, currentFileContent, currentEntities) {
+        const entityLines = splitClasses(currentEntity);
+
+        for (let i = 1; i < entityLines.length; i++) {
+            const attributeData = getAttribute(entityLines[i], currentFileContent);
+            if (!attributeData || !attributeData.type) continue;
+
+            const { type, remanentEntity } = attributeData;
+
+            // Skip if already processed or is a primitive type
+            if (processedTypes.has(type)) continue;
+            const matchedPrimitive = primitiveTypes.find((primitiveType) => type === primitiveType);
+            if (matchedPrimitive) continue;
+
+            processedTypes.add(type);
+
+            // First, try to find the entity in the current file
+            let foundEntity = searchEntityInFile(currentFileContent, type, currentEntities);
+
+            // If not found in current file, check if it's in a remanent entity (from another file)
+            if (!foundEntity && remanentEntity) {
+                const externalFileContent = readFile(`${paths.CDS_FILES}${remanentEntity.file}`);
+                const externalEntities = splitEntities(externalFileContent);
+                foundEntity = remanentEntity.entity;
+
+                // Add the external entity and recursively find its related entities
+                if (foundEntity) {
+                    filteredEntities.push(foundEntity);
+                    collectRelatedEntities(foundEntity, externalFileContent, externalEntities);
+                }
+            } else if (foundEntity) {
+                // Add the entity from the current file
+                filteredEntities.push(foundEntity);
+                // Recursively collect its related entities
+                collectRelatedEntities(foundEntity, currentFileContent, currentEntities);
+            }
+        }
+    }
 
     // Start with the isolated class
     processedTypes.add(isolatedClass);
@@ -487,9 +495,8 @@ export function writeFile(output, input, isolatedEntity) {
         });
     }
 
-    entitiesPerNamespace.forEach(value => {
-        let randomNum = Math.ceil(Math.random() * (999 - 200)) + 200;
-        setClassColor(value, randomNum, stream);
+    entitiesPerNamespace.forEach((value, key) => {
+        setClassColor(key, value, stream);
     })
 
     relationships.forEach((relationshipData) => {

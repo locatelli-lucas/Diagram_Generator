@@ -16,230 +16,458 @@ export const primitives = {
     Vector: "Vector"
 }
 
+// Entities organized by namespace with distinct colors for diagram visualization
 export const categoryTaxonomyEntities = {
-    ActiveUserView: "ActiveUserView",
-    AIFeatureConfiguration: "AIFeatureConfiguration",
-    ApprovalDocument: "ApprovalDocument",
-    ApprovalDocumentComment: "ApprovalDocumentComment",
-    ApprovalDocumentHistory: "ApprovalDocumentHistory",
-    AribaCommodity: "AribaCommodity",
-    AribaDepartment: "AribaDepartment",
-    AribaOpenAPIViewInfo: "AribaOpenAPIViewInfo",
-    AribaRegion: "AribaRegion",
-    ArticleToken: "ArticleToken",
-    ArtificialIntelligenceAcknowledgment: "ArtificialIntelligenceAcknowledgment",
-    ArtificialIntelligenceConfiguration: "ArtificialIntelligenceConfiguration",
-    ArtificialIntelligenceOutput: "ArtificialIntelligenceOutput",
-    ArtificialIntelligenceTokenUsage: "ArtificialIntelligenceTokenUsage",
-    AttachmentInfo: "AttachmentInfo",
-    AuditLogMessage: "AuditLogMessage",
-    Benefits: "Benefits",
-    BusinessImpactAnswer: "BusinessImpactAnswer",
-    BusinessImpactAssessmentQuestion: "BusinessImpactAssessmentQuestion",
-    BusinessImpactAssessmentQuestionSnapshot: "BusinessImpactAssessmentQuestionSnapshot",
-    BusinessUnit: "BusinessUnit",
-    BusinessUnitToggle: "BusinessUnitToggle",
-    Category: "Category ",
-    CategoryAccess: "CategoryAccess",
-    CategoryCoreData: "CategoryCoreData",
-    CategoryForOperationalPlanView: "CategoryForOperationalPlanView",
-    CategoryPlan: "CategoryPlan",
-    CategoryPlanBusinessUnit: "CategoryPlanBusinessUnit",
-    CategoryPlanMandatoryTools: "CategoryPlanMandatoryTools",
-    CategoryPlanOptionalTools: "CategoryPlanOptionalTools",
-    CategoryPlanRegion: "CategoryPlanRegion",
-    CategoryPlanUserView: "CategoryPlanUserView",
-    CategoryPreview: "CategoryPreview",
-    CategoryProfiles: "CategoryProfiles",
-    CategorySequences: "CategorySequences",
-    CategoryStrategies: "CategoryStrategies",
-    CategoryStrategy: "CategoryStrategy",
-    CategoryStrategyAndPlanDocuments: "CategoryStrategyAndPlanDocuments",
-    CategoryStrategyGoal: "CategoryStrategyGoal",
-    CategoryStrategyGoalRecommendation: "CategoryStrategyGoalRecommendation",
-    CategoryStrategyRecommendation: "CategoryStrategyRecommendation",
-    CategoryStrategyRecommendationHistory: "CategoryStrategyRecommendationHistory",
-    CategoryStrategyRequirement: "CategoryStrategyRequirement",
-    CategoryStrategyRequirementRecommendation: "CategoryStrategyRequirementRecommendation",
-    CategoryValueLever: "CategoryValueLever",
-    Classification: "Classification",
-    ClassificationCodeToCategoryResponse: "ClassificationCodeToCategoryResponse",
-    ClassificationImportResponse: "ClassificationImportResponse",
-    ClassificationValidationError: "ClassificationValidationError",
-    CompanyPolicy: "CompanyPolicy",
-    ContextChange: "ContextChange",
-    CostComponent: "CostComponent",
-    CostStructureBusinessUnit: "CostStructureBusinessUnit",
-    CostStructureConfiguration: "CostStructureConfiguration",
-    CostStructureGroup: "CostStructureGroup",
-    CostStructureGroupBusinessUnit: "CostStructureGroupBusinessUnit",
-    CostStructureGroupRegion: "CostStructureGroupRegion",
-    CostStructureImport: "CostStructureImport",
-    CostStructureInfo: "CostStructureInfo",
-    CostStructureMapping: "CostStructureMapping",
-    CostStructureRegion: "CostStructureRegion",
-    CustomClassification: "CustomClassification",
-    CustomClassificationInfo: "CustomClassificationInfo",
-    CustomConfiguration: "CustomConfiguration",
-    CustomTool: "CustomTool",
-    CustomToolAttachment: "CustomToolAttachment",
-    CustomToolToPlan: "CustomToolToPlan",
-    CustomToolToPlanAttachment: "CustomToolToPlanAttachment",
-    DefaultCategories: "DefaultCategories",
-    DefaultPlan: "DefaultPlan",
-    DefaultPreferenceView: "DefaultPreferenceView",
-    Department: "Department",
-    DomainMapping: "DomainMapping",
-    ElementControl: "ElementControl",
-    Email: "Email",
-    EmailBackup: "EmailBackup",
-    ErrorMessage: "ErrorMessage",
-    FavoriteMap: "FavoriteMap",
-    Files: "Files",
-    GeneratedArticle: "GeneratedArticle",
-    Goal: "Goal",
-    GoalsRegion: "GoalsRegion",
-    GoalType: "GoalType",
-    Industry: "Industry",
-    IndustryConfiguration: "IndustryConfiguration",
-    InitialCategoryTree: "InitialCategoryTree",
-    Initiative: "Initiative",
-    InitiativeAttachment: "InitiativeAttachment",
-    InitiativeCompleteDetails: "InitiativeCompleteDetails",
-    InitiativeObsoleteDetails: "InitiativeObsoleteDetails",
-    InitiativePhaseDescription: "InitiativePhaseDescription",
-    InitiativeProject: "InitiativeProject",
-    InitiativeRegion: "InitiativeRegion",
-    InitiativeValueLever: "InitiativeValueLever",
-    InvestmentType: "InvestmentType",
-    Investments: "Investments",
-    JupiterUserData: "JupiterUserData",
-    KeyValuePair: "KeyValuePair",
-    KPI: "KPI",
-    KPIUoM: "KPIUoM",
-    LawAndRegulation: "LawAndRegulation",
-    LayoutCustomization: "LayoutCustomization",
-    ManifestLeft: "ManifestLeft",
-    ManifestMiddle: "ManifestMiddle",
-    ManifestRight: "ManifestRight",
-    MappingValidationError: "MappingValidationError",
-    MarketDynamicAssessment: "MarketDynamicAssessment",
-    MarketDynamicAssessmentQuestion: "MarketDynamicAssessmentQuestion",
-    MarketDynamicAssessmentQuestionSnapshot: "MarketDynamicAssessmentQuestionSnapshot",
-    MarketDynamicAssessmentSnapshot: "MarketDynamicAssessmentSnapshot",
-    MarketDynamics: "MarketDynamics",
-    MarketDynamicsAnswer: "MarketDynamicsAnswer",
-    MarketDynamicsBusinessUnit: "MarketDynamicsBusinessUnit",
-    MarketDynamicsConfiguration: "MarketDynamicsConfiguration",
-    MarketDynamicsImport: "MarketDynamicsImport",
-    MarketDynamicsMapping: "MarketDynamicsMapping",
-    MarketDynamicsMappingInfo: "MarketDynamicsMappingInfo",
-    MarketDynamicsRegion: "MarketDynamicsRegion",
-    MarketIntelligenceDestinationMapping: "MarketIntelligenceDestinationMapping",
-    MarketIntelligenceInfo: "MarketIntelligenceInfo",
-    MarketIntelligenceNewsMapping: "MarketIntelligenceNewsMapping",
-    MarketIntelligenceReport: "MarketIntelligenceReport",
-    MarketIntelligenceReportInfo: "MarketIntelligenceReportInfo",
-    MaterialGroup: "MaterialGroup",
-    MigrationControl: "MigrationControl",
-    OperationHistory: "OperationHistory",
-    OutdatedTools: "OutdatedTools",
-    PdmCategoryPlanView: "PdmCategoryPlanView",
-    PdmCategoryView: "PdmCategoryView",
-    PdmStakeholderView: "PdmStakeholderView",
-    PdmTeamView: "PdmTeamView",
-    PdmUsersView: "PdmUsersView",
-    PhasesToTools: "PhasesToTools",
-    PhasesToToolsSnapshot: "PhasesToToolsSnapshot",
-    PlannedSpend: "PlannedSpend",
-    PlanWithNewRisksLog: "PlanWithNewRisksLog",
-    Preferencing: "Preferencing",
-    PrismEntitySubscription: "PrismEntitySubscription",
-    ProcessPhase: "ProcessPhase",
-    ProcessPhaseSnapshot: "ProcessPhaseSnapshot",
-    ProcessSetup: "ProcessSetup",
-    ProcessSetupSnapshot: "ProcessSetupSnapshot",
-    ProcessTemplate: "ProcessTemplate",
-    ProcessTemplateSnapshot: "ProcessTemplateSnapshot",
-    PromptToken: "PromptToken",
-    PublishStatus: "PublishStatus",
-    RegenerateControl: "RegenerateControl",
-    Region: "Region",
-    RegionImportResponse: "RegionImportResponse",
-    RegionPreview: "RegionPreview",
-    RegionValidation: "RegionValidation",
-    ReloadCategoryTree: "ReloadCategoryTree",
-    Requirement: "Requirement",
-    Risk: "Risk",
-    RiskAssessment: "RiskAssessment",
-    RiskAssessmentOperationalReporting: "RiskAssessmentOperationalReporting",
-    RiskLevel: "RiskLevel",
-    RiskOverview: "RiskOverview",
-    RiskType: "RiskType",
-    Role: "Role",
-    RuleEnforcedDomain: "RuleEnforcedDomain",
-    SACStoryMapping: "SACStoryMapping",
-    SACStoryMappingModel: "SACStoryMappingModel",
-    ScriptControl: "ScriptControl",
-    Segmentation: "Segmentation",
-    SegmentationAssessment: "SegmentationAssessment",
-    SegmentationAssessmentSnapshot: "SegmentationAssessmentSnapshot",
-    SourcingProject: "SourcingProject",
-    SpendByCategory: "SpendByCategory",
-    SpendByRegion: "SpendByRegion",
-    SpendBySubCategory: "SpendBySubCategory",
-    SpendBySupplier: "SpendBySupplier",
-    SpendCardAndStoryMapping: "SpendCardAndStoryMapping",
-    SpendChannel: "SpendChannel",
-    SpendChannels: "SpendChannels",
-    SpendPeriodConfiguration: "SpendPeriodConfiguration",
-    Stakeholder: "Stakeholder",
-    StoryMappingModel: "StoryMappingModel",
-    SubDivisionIso: "SubDivisionIso",
-    SubscriptionParameter: "SubscriptionParameter",
-    Supplier: "Supplier",
-    SupplierData: "SupplierData",
-    SupplierDetails: "SupplierDetails",
-    SupplierPreferencingAnswer: "SupplierPreferencingAnswer",
-    SupplierPreferencingAssessment: "SupplierPreferencingAssessment",
-    SupplierPreferencingAssessmentQuestion: "SupplierPreferencingAssessmentQuestion",
-    SupplierPreferencingAssessmentQuestionSnapshot: "SupplierPreferencingAssessmentQuestionSnapshot",
-    SupplierPreferencingAssessmentSnapshot: "SupplierPreferencingAssessmentSnapshot",
-    SupplyRiskAnswer: "SupplyRiskAnswer",
-    SupplyRiskAssessmentQuestion: "SupplyRiskAssessmentQuestion",
-    SupplyRiskAssessmentQuestionSnapshot: "SupplyRiskAssessmentQuestionSnapshot",
-    SWOT: "SWOT",
-    Team: "Team",
-    TemplatesToTools: "TemplatesToTools",
-    TemplatesToToolsSnapshot: "TemplatesToToolsSnapshot",
-    Tool: "Tool",
-    ToolData: "ToolData",
-    ToolDocuments: "ToolDocuments",
-    ToolkitDocuments: "ToolkitDocuments",
-    Tools: "Tools",
-    UnboundUser: "UnboundUser",
-    UnitOfMeasure: "UnitOfMeasure",
-    UploadedData: "UploadedData",
-    User: "User",
-    UserBackup: "UserBackup",
-    UserNewsFeedInteraction: "UserNewsFeedInteraction",
-    UserPreferenceCategory: "UserPreferenceCategory",
-    UserPreferenceColumns: "UserPreferenceColumns",
-    UserPreferenceGoalType: "UserPreferenceGoalType",
-    UserPreferenceKPI: "UserPreferenceKPI",
-    UserPreferencePhase: "UserPreferencePhase",
-    UserPreferenceView: "UserPreferenceView",
-    UserView: "UserView",
-    UserViews: "UserViews",
-    ValidateMappingWithCategoryResponse: "ValidateMappingWithCategoryResponse",
-    ValueLever: "ValueLever",
-    ValueLeverGroup: "ValueLeverGroup",
-    ValueLeverGroupToLever: "ValueLeverGroupToLever",
-    VersionChangelog: "VersionChangelog",
-    VersionMap: "VersionMap",
-    VersioningConfiguration: "VersioningConfiguration",
-    VersioningTools: "VersioningTools",
-    RiskExposureCategoryModelCds: "RiskExposureCategoryModelCds"
+    "artificialIntelligence": {
+        color: "f46325",
+        file: "artificialIntelligence-schema.cds",
+        entities: {
+            AIFeatureConfiguration: "AIFeatureConfiguration",
+            ArticleToken: "ArticleToken",
+            ArtificialIntelligenceAcknowledgment: "ArtificialIntelligenceAcknowledgment",
+            ArtificialIntelligenceConfiguration: "ArtificialIntelligenceConfiguration",
+            ArtificialIntelligenceOutput: "ArtificialIntelligenceOutput",
+            ArtificialIntelligenceTokenUsage: "ArtificialIntelligenceTokenUsage",
+            ContextChange: "ContextChange",
+            GeneratedArticle: "GeneratedArticle",
+            PromptToken: "PromptToken",
+            RegenerateControl: "RegenerateControl"
+        }
+    },
+    "categoryPlan": {
+        color: "c9841d",
+        file: "categoryPlan-schema.cds",
+        entities: {
+            ApprovalDocument: "ApprovalDocument",
+            ApprovalDocumentComment: "ApprovalDocumentComment",
+            ApprovalDocumentHistory: "ApprovalDocumentHistory",
+            CategoryPlan: "CategoryPlan",
+            CategoryPlanBusinessUnit: "CategoryPlanBusinessUnit",
+            CategoryPlanMandatoryTools: "CategoryPlanMandatoryTools",
+            CategoryPlanOptionalTools: "CategoryPlanOptionalTools",
+            CategoryPlanRegion: "CategoryPlanRegion",
+            DefaultPlan: "DefaultPlan"
+        }
+    },
+    "categorySpend": {
+        color: "4de5cf",
+        file: "categorySpend-schema.cds",
+        entities: {
+            Preferencing: "Preferencing",
+            Risk: "Risk",
+            RiskExposureCategoryModelCds: "RiskExposureCategoryModelCds",
+            RiskOverview: "RiskOverview",
+            SpendByCategory: "SpendByCategory",
+            SpendByRegion: "SpendByRegion",
+            SpendBySubCategory: "SpendBySubCategory",
+            SpendBySupplier: "SpendBySupplier"
+        }
+    },
+    "categoryStrategies": {
+        color: "36afe2",
+        file: "categoryStrategies-schema.cds",
+        entities: {
+            CategoryStrategies: "CategoryStrategies",
+            CategoryStrategy: "CategoryStrategy",
+            CategoryStrategyGoal: "CategoryStrategyGoal",
+            CategoryStrategyGoalRecommendation: "CategoryStrategyGoalRecommendation",
+            CategoryStrategyRecommendation: "CategoryStrategyRecommendation",
+            CategoryStrategyRecommendationHistory: "CategoryStrategyRecommendationHistory",
+            CategoryStrategyRequirement: "CategoryStrategyRequirement",
+            CategoryStrategyRequirementRecommendation: "CategoryStrategyRequirementRecommendation"
+        }
+    },
+    "categoryValueLever": {
+        color: "2e65b8",
+        file: "categoryValueLever-schema.cds",
+        entities: {
+            CategoryValueLever: "CategoryValueLever"
+        }
+    },
+    "common": {
+        color: "8ce236",
+        file: "common-schema.cds",
+        entities: {
+            AttachmentInfo: "AttachmentInfo",
+            AuditLogMessage: "AuditLogMessage",
+            CustomConfiguration: "CustomConfiguration",
+            KeyValuePair: "KeyValuePair"
+        }
+    },
+    "costStructure": {
+        color: "8c47d1",
+        file: "costStructure-schema.cds",
+        entities: {
+            CostStructureBusinessUnit: "CostStructureBusinessUnit",
+            CostStructureConfiguration: "CostStructureConfiguration",
+            CostStructureGroup: "CostStructureGroup",
+            CostStructureGroupBusinessUnit: "CostStructureGroupBusinessUnit",
+            CostStructureGroupRegion: "CostStructureGroupRegion",
+            CostStructureImport: "CostStructureImport",
+            CostStructureInfo: "CostStructureInfo",
+            CostStructureMapping: "CostStructureMapping",
+            CostStructureRegion: "CostStructureRegion"
+        }
+    },
+    "customClassification": {
+        color: "253af4",
+        file: "customClassification-schema.cds",
+        entities: {
+            ClassificationImportResponse: "ClassificationImportResponse",
+            ClassificationValidationError: "ClassificationValidationError",
+            CustomClassification: "CustomClassification",
+            CustomClassificationInfo: "CustomClassificationInfo",
+            MappingValidationError: "MappingValidationError",
+            ValidateMappingWithCategoryResponse: "ValidateMappingWithCategoryResponse"
+        }
+    },
+    "customTool": {
+        color: "b10bda",
+        file: "customTool-schema.cds",
+        entities: {
+            CustomTool: "CustomTool",
+            CustomToolAttachment: "CustomToolAttachment",
+            CustomToolToPlan: "CustomToolToPlan",
+            CustomToolToPlanAttachment: "CustomToolToPlanAttachment"
+        }
+    },
+    "divisionalPlans": {
+        color: "47d1a8",
+        file: "divisionsAndBusinessUnits-schema.cds",
+        entities: {
+            BusinessUnit: "BusinessUnit",
+            BusinessUnitToggle: "BusinessUnitToggle"
+        }
+    },
+    "goal": {
+        color: "d6935c",
+        file: "goal-schema.cds",
+        entities: {
+            Goal: "Goal",
+            GoalsRegion: "GoalsRegion"
+        }
+    },
+    "initiative": {
+        color: "d1c347",
+        file: "initiative-schema.cds",
+        entities: {
+            AribaCommodity: "AribaCommodity",
+            AribaDepartment: "AribaDepartment",
+            AribaRegion: "AribaRegion",
+            Benefits: "Benefits",
+            Initiative: "Initiative",
+            InitiativeAttachment: "InitiativeAttachment",
+            InitiativeCompleteDetails: "InitiativeCompleteDetails",
+            InitiativeObsoleteDetails: "InitiativeObsoleteDetails",
+            InitiativePhaseDescription: "InitiativePhaseDescription",
+            InitiativeProject: "InitiativeProject",
+            InitiativeRegion: "InitiativeRegion",
+            InitiativeValueLever: "InitiativeValueLever",
+            Investments: "Investments",
+            SourcingProject: "SourcingProject"
+        }
+    },
+    "lawAndRegulation": {
+        color: "3f1dc9",
+        file: "lawAndRegulation-schema.cds",
+        entities: {
+            CompanyPolicy: "CompanyPolicy",
+            LawAndRegulation: "LawAndRegulation"
+        }
+    },
+    "managementView": {
+        color: "e236d1",
+        file: "management-view-schema.cds",
+        entities: {
+            DefaultPreferenceView: "DefaultPreferenceView",
+            FavoriteMap: "FavoriteMap",
+            UserPreferenceCategory: "UserPreferenceCategory",
+            UserPreferenceColumns: "UserPreferenceColumns",
+            UserPreferenceGoalType: "UserPreferenceGoalType",
+            UserPreferenceKPI: "UserPreferenceKPI",
+            UserPreferencePhase: "UserPreferencePhase",
+            UserPreferenceView: "UserPreferenceView",
+            UserViews: "UserViews"
+        }
+    },
+    "marketDynamics": {
+        color: "f2b90d",
+        file: "marketDynamics-schema.cds",
+        entities: {
+            MarketDynamics: "MarketDynamics",
+            MarketDynamicsAnswer: "MarketDynamicsAnswer",
+            MarketDynamicsBusinessUnit: "MarketDynamicsBusinessUnit",
+            MarketDynamicsConfiguration: "MarketDynamicsConfiguration",
+            MarketDynamicsImport: "MarketDynamicsImport",
+            MarketDynamicsMapping: "MarketDynamicsMapping",
+            MarketDynamicsMappingInfo: "MarketDynamicsMappingInfo",
+            MarketDynamicsRegion: "MarketDynamicsRegion"
+        }
+    },
+    "marketIntelligence": {
+        color: "dee54d",
+        file: "marketIntelligence-schema.cds",
+        entities: {
+            MarketIntelligenceDestinationMapping: "MarketIntelligenceDestinationMapping",
+            MarketIntelligenceNewsMapping: "MarketIntelligenceNewsMapping",
+            UserNewsFeedInteraction: "UserNewsFeedInteraction"
+        }
+    },
+    "masterdata": {
+        color: "25f43a",
+        file: "masterdata.cds",
+        entities: {
+            BusinessImpactAssessmentQuestion: "BusinessImpactAssessmentQuestion",
+            CostComponent: "CostComponent",
+            Department: "Department",
+            GoalType: "GoalType",
+            Industry: "Industry",
+            IndustryConfiguration: "IndustryConfiguration",
+            InvestmentType: "InvestmentType",
+            KPI: "KPI",
+            KPIUoM: "KPIUoM",
+            MarketDynamicAssessment: "MarketDynamicAssessment",
+            MarketDynamicAssessmentQuestion: "MarketDynamicAssessmentQuestion",
+            MarketIntelligenceInfo: "MarketIntelligenceInfo",
+            MarketIntelligenceReport: "MarketIntelligenceReport",
+            MarketIntelligenceReportInfo: "MarketIntelligenceReportInfo",
+            PhasesToTools: "PhasesToTools",
+            ProcessPhase: "ProcessPhase",
+            ProcessSetup: "ProcessSetup",
+            ProcessTemplate: "ProcessTemplate",
+            Role: "Role",
+            SegmentationAssessment: "SegmentationAssessment",
+            SpendChannel: "SpendChannel",
+            SupplierPreferencingAssessment: "SupplierPreferencingAssessment",
+            SupplierPreferencingAssessmentQuestion: "SupplierPreferencingAssessmentQuestion",
+            SupplyRiskAssessmentQuestion: "SupplyRiskAssessmentQuestion",
+            TemplatesToTools: "TemplatesToTools",
+            Tool: "Tool",
+            Tools: "Tools",
+            UnitOfMeasure: "UnitOfMeasure",
+            ValueLever: "ValueLever",
+            ValueLeverGroup: "ValueLeverGroup",
+            ValueLeverGroupToLever: "ValueLeverGroupToLever",
+            VersioningConfiguration: "VersioningConfiguration",
+            VersioningTools: "VersioningTools"
+        }
+    },
+    "masterdataSnapshot": {
+        color: "1dc962",
+        file: "masterdataSnapshot-schema.cds",
+        entities: {
+            BusinessImpactAssessmentQuestionSnapshot: "BusinessImpactAssessmentQuestionSnapshot",
+            MarketDynamicAssessmentQuestionSnapshot: "MarketDynamicAssessmentQuestionSnapshot",
+            MarketDynamicAssessmentSnapshot: "MarketDynamicAssessmentSnapshot",
+            SegmentationAssessmentSnapshot: "SegmentationAssessmentSnapshot",
+            SupplierPreferencingAssessmentQuestionSnapshot: "SupplierPreferencingAssessmentQuestionSnapshot",
+            SupplierPreferencingAssessmentSnapshot: "SupplierPreferencingAssessmentSnapshot",
+            SupplyRiskAssessmentQuestionSnapshot: "SupplyRiskAssessmentQuestionSnapshot"
+        }
+    },
+    "migration": {
+        color: "f42563",
+        file: "migration-schema.cds",
+        entities: {
+            ElementControl: "ElementControl",
+            MigrationControl: "MigrationControl",
+            ScriptControl: "ScriptControl"
+        }
+    },
+    "operationalReporting": {
+        color: "0bdada",
+        file: "operationalReporting-schema.cds",
+        entities: {
+            CategoryForOperationalPlanView: "CategoryForOperationalPlanView",
+            CategoryProfiles: "CategoryProfiles",
+            CategoryStrategyAndPlanDocuments: "CategoryStrategyAndPlanDocuments",
+            Stakeholder: "Stakeholder",
+            SupplierData: "SupplierData",
+            Team: "Team"
+        }
+    },
+    "pdm": {
+        color: "7df53d",
+        file: "pdm-model.cds",
+        entities: {
+            PdmCategoryPlanView: "PdmCategoryPlanView",
+            PdmCategoryView: "PdmCategoryView",
+            PdmStakeholderView: "PdmStakeholderView",
+            PdmTeamView: "PdmTeamView",
+            PdmUsersView: "PdmUsersView"
+        }
+    },
+    "plannedSpend": {
+        color: "5cd67a",
+        file: "plannedSpend-schema.cds",
+        entities: {
+            PlannedSpend: "PlannedSpend"
+        }
+    },
+    "prismIngestion": {
+        color: "33b5cc",
+        file: "prismIngestion-schema.cds",
+        entities: {
+            PrismEntitySubscription: "PrismEntitySubscription",
+            UploadedData: "UploadedData"
+        }
+    },
+    "processSetupSnapshot": {
+        color: "29df20",
+        file: "processSetupSnapshot.cds",
+        entities: {
+            PhasesToToolsSnapshot: "PhasesToToolsSnapshot",
+            ProcessPhaseSnapshot: "ProcessPhaseSnapshot",
+            ProcessSetupSnapshot: "ProcessSetupSnapshot",
+            ProcessTemplateSnapshot: "ProcessTemplateSnapshot",
+            TemplatesToToolsSnapshot: "TemplatesToToolsSnapshot"
+        }
+    },
+    "region": {
+        color: "3da2f5",
+        file: "region-schema.cds",
+        entities: {
+            Region: "Region",
+            RegionImportResponse: "RegionImportResponse",
+            RegionPreview: "RegionPreview",
+            RegionValidation: "RegionValidation",
+            SubDivisionIso: "SubDivisionIso"
+        }
+    },
+    "requirement": {
+        color: "2050df",
+        file: "requirement-schema.cds",
+        entities: {
+            Requirement: "Requirement"
+        }
+    },
+    "riskAssessment": {
+        color: "0df28b",
+        file: "riskAssessment-schema.cds",
+        entities: {
+            PlanWithNewRisksLog: "PlanWithNewRisksLog",
+            RiskAssessment: "RiskAssessment",
+            RiskLevel: "RiskLevel",
+            RiskType: "RiskType"
+        }
+    },
+    "segmentation": {
+        color: "49b82e",
+        file: "segmentation-schema.cds",
+        entities: {
+            BusinessImpactAnswer: "BusinessImpactAnswer",
+            Segmentation: "Segmentation",
+            SupplyRiskAnswer: "SupplyRiskAnswer"
+        }
+    },
+    "spendChannels": {
+        color: "625cd6",
+        file: "spendChannels-schema.cds",
+        entities: {
+            SpendChannels: "SpendChannels"
+        }
+    },
+    "stakeholder": {
+        color: "f53dc7",
+        file: "stakeholder-schema.cds",
+        entities: {
+            UnboundUser: "UnboundUser"
+        }
+    },
+    "subscription": {
+        color: "5d0df2",
+        file: "subscription-schema.cds",
+        entities: {
+            SubscriptionParameter: "SubscriptionParameter"
+        }
+    },
+    "supplier": {
+        color: "b04de5",
+        file: "supplier-schema.cds",
+        entities: {
+            Supplier: "Supplier"
+        }
+    },
+    "supplierExt": {
+        color: "c433cc",
+        file: "supplierExt-schema.cds",
+        entities: {
+            SupplierDetails: "SupplierDetails",
+            SupplierPreferencingAnswer: "SupplierPreferencingAnswer",
+            SWOT: "SWOT"
+        }
+    },
+    "systemConfiguration": {
+        color: "b82e81",
+        file: "systemConfiguration-schema.cds",
+        entities: {
+            DomainMapping: "DomainMapping",
+            SACStoryMapping: "SACStoryMapping",
+            SACStoryMappingModel: "SACStoryMappingModel",
+            SpendCardAndStoryMapping: "SpendCardAndStoryMapping",
+            SpendPeriodConfiguration: "SpendPeriodConfiguration",
+            StoryMappingModel: "StoryMappingModel"
+        }
+    },
+    "taxonomy": {
+        color: "b82e2e",
+        file: "schema.cds",
+        entities: {
+            ActiveUserView: "ActiveUserView",
+            Category: "Category",
+            CategoryAccess: "CategoryAccess",
+            CategoryCoreData: "CategoryCoreData",
+            CategoryPlanUserView: "CategoryPlanUserView",
+            CategoryPreview: "CategoryPreview",
+            CategorySequences: "CategorySequences",
+            Classification: "Classification",
+            ClassificationCodeToCategoryResponse: "ClassificationCodeToCategoryResponse",
+            DefaultCategories: "DefaultCategories",
+            Email: "Email",
+            EmailBackup: "EmailBackup",
+            ErrorMessage: "ErrorMessage",
+            Files: "Files",
+            InitialCategoryTree: "InitialCategoryTree",
+            JupiterUserData: "JupiterUserData",
+            MaterialGroup: "MaterialGroup",
+            OperationHistory: "OperationHistory",
+            PublishStatus: "PublishStatus",
+            ReloadCategoryTree: "ReloadCategoryTree",
+            RuleEnforcedDomain: "RuleEnforcedDomain",
+            User: "User",
+            UserBackup: "UserBackup",
+            UserView: "UserView"
+        }
+    },
+    "toolkit": {
+        color: "96cc33",
+        file: "toolkit-schema.cds",
+        entities: {
+            OutdatedTools: "OutdatedTools",
+            ToolData: "ToolData",
+            ToolDocuments: "ToolDocuments",
+            ToolkitDocuments: "ToolkitDocuments"
+        }
+    },
+    "versioning": {
+        color: "df2076",
+        file: "versioning-schema.cds",
+        entities: {
+            VersionChangelog: "VersionChangelog",
+            VersionMap: "VersionMap"
+        }
+    },
+    "workbench": {
+        color: "b1da0b",
+        file: "workbench-schema.cds",
+        entities: {
+            AribaOpenAPIViewInfo: "AribaOpenAPIViewInfo",
+            LayoutCustomization: "LayoutCustomization",
+            ManifestLeft: "ManifestLeft",
+            ManifestMiddle: "ManifestMiddle",
+            ManifestRight: "ManifestRight"
+        }
+    }
 };
 
 export const paths = {

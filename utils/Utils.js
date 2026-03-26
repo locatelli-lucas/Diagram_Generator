@@ -326,7 +326,11 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
     for (let i = 1; i < lines.length; i++) {
         try {
             let currentLine = lines[i];
-            let { name, type, remanentEntity, line } = getAttribute(currentLine, data)
+            let attributeData = getAttribute(currentLine, data);
+
+            if (!attributeData) continue;
+
+            let { name, type, remanentEntity, line } = attributeData;
 
             if (!name || !type || !line) continue;
 
@@ -397,7 +401,11 @@ export function processRemanentEntities(remanentEntities, stream, relationships,
 }
 
 function getColor(namespace) {
-    return categoryTaxonomyEntities[namespace].color;
+    try {
+        return categoryTaxonomyEntities[namespace].color;
+    } catch {
+        console.error(`No color defined for namespace ${namespace}`)
+    }    
 }
 
 function setClassColor(key, value, stream) {

@@ -63,6 +63,17 @@ export const categoryTaxonomyEntities = {
             SpendBySupplier: "SpendBySupplier"
         }
     },
+    "categorySpendSnapshot": {
+        color: "2ed6cf",
+        file: "categorySpendSnapshot-schema.cds",
+        entities: {
+            SpendByCategory: "SpendByCategory",
+            SpendBySubCategory: "SpendBySubCategory",
+            SpendBySupplier: "SpendBySupplier",
+            Preferencing: "Preferencing",
+            SpendByRegion: "SpendByRegion"
+        }
+    },
     "categoryStrategies": {
         color: "36afe2",
         file: "categoryStrategies-schema.cds",
@@ -129,6 +140,28 @@ export const categoryTaxonomyEntities = {
             CustomToolAttachment: "CustomToolAttachment",
             CustomToolToPlan: "CustomToolToPlan",
             CustomToolToPlanAttachment: "CustomToolToPlanAttachment"
+        }
+    },
+    "externalFactorsAnalysis": {
+        color: "e8a52e",
+        file: "externalFactorsAnalysis-schema.cds",
+        entities: {
+            ExternalAnalysisTool: "ExternalAnalysisTool",
+            ExternalAnalysisAttachment: "ExternalAnalysisAttachment",
+            ExternalFactor: "ExternalFactor",
+            KeyFactor: "KeyFactor",
+            ExternalFactorLevelValueHelper: "ExternalFactorLevelValueHelper",
+            ExternalAnalysisImpactValueHelper: "ExternalAnalysisImpactValueHelper",
+            ExternalAnalysisProbabilityValueHelper: "ExternalAnalysisProbabilityValueHelper",
+            ExternalFactorLevel: "ExternalFactorLevel",
+            RequiredRiskLevelThreshold: "RequiredRiskLevelThreshold",
+            ExternalFactorCardData: "ExternalFactorCardData",
+            ExternalFactorSummary: "ExternalFactorSummary",
+            KeyFactorSummary: "KeyFactorSummary",
+            KeyFactorError: "KeyFactorError",
+            ExternalFactorInfo: "ExternalFactorInfo",
+            ExternalAnalysisResult: "ExternalAnalysisResult",
+            PlanWithNewExternalFactorsLog: "PlanWithNewExternalFactorsLog"
         }
     },
     "divisionalPlans": {
@@ -265,6 +298,13 @@ export const categoryTaxonomyEntities = {
             SupplyRiskAssessmentQuestionSnapshot: "SupplyRiskAssessmentQuestionSnapshot"
         }
     },
+    "mdapp": {
+        color: "5c8ed6",
+        file: "mdapp-schema.cds",
+        entities: {
+            CurrencyCodes: "CurrencyCodes"
+        }
+    },
     "migration": {
         color: "f42563",
         file: "migration-schema.cds",
@@ -272,6 +312,16 @@ export const categoryTaxonomyEntities = {
             ElementControl: "ElementControl",
             MigrationControl: "MigrationControl",
             ScriptControl: "ScriptControl"
+        }
+    },
+    "notification": {
+        color: "f5a13d",
+        file: "notification-schema.cds",
+        entities: {
+            NotificationConfiguration: "NotificationConfiguration",
+            NotificationType: "NotificationType",
+            TriggerType: "TriggerType",
+            ANSResourceHash: "ANSResourceHash"
         }
     },
     "operationalReporting": {
@@ -397,6 +447,14 @@ export const categoryTaxonomyEntities = {
             SWOT: "SWOT"
         }
     },
+    "swot": {
+        color: "d65c9e",
+        file: "swot-schema.cds",
+        entities: {
+            SWOT: "SWOT",
+            SWOTType: "SWOTType"
+        }
+    },
     "systemConfiguration": {
         color: "b82e81",
         file: "systemConfiguration-schema.cds",
@@ -437,6 +495,13 @@ export const categoryTaxonomyEntities = {
             User: "User",
             UserBackup: "UserBackup",
             UserView: "UserView"
+        }
+    },
+    "team": {
+        color: "3dd6b0",
+        file: "team-schema.cds",
+        entities: {
+            Team: "Team"
         }
     },
     "toolkit": {

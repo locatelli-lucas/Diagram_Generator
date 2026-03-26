@@ -278,18 +278,18 @@ function addEntityToGlobalMap(entityName, entity) {
 
 // Writes entity header with appropriate class syntax for Mermaid
 function writeEntityHeader(stream, className, classType, namespace, entitiesPerNamespace) {
-    let cache = `\n class ${className}`;
+    let cache = `\nnamespace ${namespace} {\n  class ${className}`;
 
     if (!entitiesPerNamespace.has(namespace)) {
         entitiesPerNamespace.set(namespace, new Set());
     }
 
-    entitiesPerNamespace.get(namespace).add(`${className}CSSClass`);
+    entitiesPerNamespace.get(namespace).add(`${namespace}_${className}_CSSClass`);
 
     if (classType === "entity") {
-        cache += `:::${className}CSSClass{\n`
+        cache += `:::${namespace}_${className}_CSSClass {\n`
     } else {
-        cache += `~type~:::${className}CSSClass{\n`
+        cache += `~type~:::${namespace}_${className}_CSSClass {\n`
     }
     stream.write(cache);
     return cache;
@@ -336,8 +336,8 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
                 const relResult = handleRelationship(line, className, type, relationships);
 
                 if (relResult == null) {
-                    stream.write(`  ${name} : ${type}\n`);
-                    cache += `  ${name} : ${type}\n`;
+                    stream.write(`   ${name} : ${type}\n`);
+                    cache += `   ${name} : ${type}\n`;
                     continue;
                 }
                 type = relResult.type;
@@ -346,8 +346,8 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
                 cache += `${line}\n`;
                 continue;
             }
-            stream.write(`  ${name} : ${type}\n`);
-            cache += `  ${name} : ${type}\n`;
+            stream.write(`   ${name} : ${type}\n`);
+            cache += `   ${name} : ${type}\n`;
         } catch (error) {
             console.error(`${error} happened on entity ${className} in line ${i}`)
         }
@@ -357,8 +357,8 @@ function processEntityAttributes(lines, stream, className, data, relationships, 
 
 // Finalizes entity definition by closing brackets and caching
 function finalizeEntity(stream, className, cache) {
-    stream.write(" }\n");
-    cache += "}\n";
+    stream.write("  }\n}\n");
+    cache += "}\n}\n";
     addEntityToGlobalMap(className, cache);
 }
 
@@ -401,7 +401,7 @@ function getColor(namespace) {
 }
 
 function setClassColor(key, value, stream) {
-    stream.write("  classDef ");
+    stream.write("classDef ");
     let i = 0;
     for (const name of value) {
         if (i == value.size - 1) {
@@ -502,7 +502,7 @@ export function writeFile(output, input, isolatedEntity) {
     relationships.forEach((relationshipData) => {
         if (!globalEntities.has(relationshipData.secondary)) return;
         stream.write(
-            `  ${relationshipData.primary} ${relationshipData.relationshipType} ${relationshipData.secondary} : ${relationshipData.connectionType}\n`
+            `${relationshipData.primary} ${relationshipData.relationshipType} ${relationshipData.secondary} : ${relationshipData.connectionType}\n`
         );
     });
     stream.write("```");
